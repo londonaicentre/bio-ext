@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ## this script allows docker-compose to be run from a local repository 
+## usage: sudo ./setup.sh
 
 DEPLOY_DIR="/srv/bioext"
 
@@ -17,26 +18,31 @@ echo "docker-compose.yml copied to $DEPLOY_DIR"
 if [ ! -f "$DEPLOY_DIR/.env" ]; then
     MINIO_ACCESS_KEY=$(openssl rand -hex 8)
     MINIO_SECRET_KEY=$(openssl rand -hex 16)
-    cat > "$DEPLOY_DIR/.env" << EOL
-      MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY
-      MINIO_SECRET_KEY=$MINIO_SECRET_KEY
-      EOL
+    sudo cat > "$DEPLOY_DIR/.env" << EOL
+MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY
+MINIO_SECRET_KEY=$MINIO_SECRET_KEY
+EOL
     echo "New .env file created with randomly generated credentials"
 else
     echo "Existing .env file found. Using existing credentials."
 fi
 
+#source .env into shell
+set -a
+source "$DEPLOY_DIR/.env"
+set +a
+
 # shut down any existing containers
 echo "Shutting down existing containers..."
-docker-compose down
+docker-compose --env-file "$DEPLOY_DIR/.env" down
 
 # pull latest
 echo "Pulling latest..."
-docker-compose pull
+docker-compose --env-file "$DEPLOY_DIR/.env" pull
 
 # start up containers
 echo "Starting up containers..."
-docker-compose up -d
+docker-compose --env-file "$DEPLOY_DIR/.env" up -d
 
 echo "Bio-ext environment started. You can access:"
 echo "LabelStudio at http://localhost:8080"
