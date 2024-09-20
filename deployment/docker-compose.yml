@@ -1,0 +1,38 @@
+services:
+  labelstudio:
+    image: heartexlabs/label-studio:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/labelstudio:/label-studio/data
+    environment:
+      - LABEL_STUDIO_HOST=http://localhost
+      - LABEL_STUDIO_PORT=8080
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data/mlflow:/mlflow/data
+    environment:
+      - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db
+      - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts
+      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+    command: mlflow server --host 0.0.0.0 --port 5000
+    depends_on:
+      - minio
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./data/minio:/data
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
