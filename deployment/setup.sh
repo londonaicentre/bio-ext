@@ -6,6 +6,8 @@ DEPLOY_DIR="/srv/bioext"
 
 # create directories for each service as mount (if they don't already exist)
 mkdir -p "$DEPLOY_DIR/data/doccano"
+chmod 777 "$DEPLOY_DIR/data/doccano"
+
 mkdir -p "$DEPLOY_DIR/data/mlflow"
 mkdir -p "$DEPLOY_DIR/data/minio"
 
@@ -57,16 +59,16 @@ echo "Starting up containers..."
 docker-compose --env-file "$DEPLOY_DIR/.env" up -d
 
 # check if MLFlow service running
-# echo "Waiting for MLflow to be ready..."
-# timeout 60s bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 1; done' || { echo "MLflow failed to start"; exit 1; }
+ echo "Waiting for MLflow to be ready..."
+ timeout 60s bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 1; done' || { echo "MLflow failed to start"; exit 1; }
 
 # test MLFlow service
-# echo "Testing MLflow artifact creation..."
-# docker run --rm --network host -v "$DEPLOY_DIR:/app" -w /app python:3.11.2 bash -c "
-#    pip install mlflow[extras] &&
-#    python artifact_test.py
-#"
-#rm "$DEPLOY_DIR/artifact_test.py"
+ echo "Testing MLflow artifact creation..."
+ docker run --rm --network host -v "$DEPLOY_DIR:/app" -w /app python:3.11.2 bash -c "
+    pip install mlflow[extras] &&
+    python artifact_test.py
+"
+rm "$DEPLOY_DIR/artifact_test.py"
 
 echo "Bio-ext environment started. You can access:"
 echo "Doccano at http://localhost:8000"
