@@ -4,14 +4,11 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data/doccano:/data
+      - doccano_data:/data
     environment:
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=adminpw
       - ADMIN_EMAIL=admin@admin.com
-      # - ADMIN_USERNAME="${DOCCANO_ADMIN_USERNAME}"
-      # - ADMIN_PASSWORD="${DOCCANO_ADMIN_PASSWORD}"
-      # - ADMIN_EMAIL="${DOCCANO_ADMIN_EMAIL}"
       - DJANGO_DB_ENGINE=django.db.backends.sqlite3
       - DJANGO_DB_NAME=/data/doccano.sqlite3
     command: ["/doccano/tools/run.sh", "webserver"]
@@ -22,7 +19,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./data/mlflow:/mlflow/data
+      - mlflow_data:/mlflow/data
     environment:
       - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db #use sqlite in mounted volume for metadata
       - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts #use s3 type storage instead of local dir
@@ -40,9 +37,14 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - ./data/minio:/data
+      - minio_data:/data
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
     command: server /data --console-address ":9001"
     restart: unless-stopped
+
+volumes:
+  mlflow_data:
+  minio_data:
+  doccano_data:

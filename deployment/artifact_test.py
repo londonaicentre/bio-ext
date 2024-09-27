@@ -1,4 +1,5 @@
-# script that is run on first deployment
+# for now, run this in a python venv. 
+# requires pip install mlflow[extras] (this includes boto3 to talk to s3)
 # test creation of artifacts using MLFlow and Minio 
 
 import mlflow
