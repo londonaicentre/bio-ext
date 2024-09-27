@@ -14,7 +14,12 @@ cp docker-compose.yml "$DEPLOY_DIR/"
 echo "docker-compose.yml copied to $DEPLOY_DIR"
 
 cp mlflow-entrypoint.sh "$DEPLOY_DIR/"
+chmod +x "$DEPLOY_DIR/mlflow-entrypoint.sh"
 echo "mlflow-entrypoint.sh copied to $DEPLOY_DIR"
+
+cp artifact_test.py "$DEPLOY_DIR/"
+chmod +x "$DEPLOY_DIR/artifact_test.py"
+echo "artifact_test.py copied to $DEPLOY_DIR"
 
 # check if .env file exists, create if it doesn't, set new credentials
 if [ ! -f "$DEPLOY_DIR/.env" ]; then
@@ -40,6 +45,9 @@ set -a
 source "$DEPLOY_DIR/.env"
 set +a
 
+# change to the deployment directory
+cd "$DEPLOY_DIR" || { echo "Failed to change to $DEPLOY_DIR"; exit 1; }
+
 # shut down any existing containers
 echo "Shutting down existing containers..."
 docker-compose --env-file "$DEPLOY_DIR/.env" down
@@ -58,7 +66,6 @@ timeout 60s bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 1
 
 # test MLFlow service
 echo "Testing MLflow artifact creation..."
-cp artifact_test.py "$DEPLOY_DIR/artifact_test.py"
 docker run --rm --network host -v "$DEPLOY_DIR:/app" -w /app python:3.11.2 bash -c "
     pip install mlflow[extras] &&
     python artifact_test.py
