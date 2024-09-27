@@ -11,8 +11,6 @@ services:
       - ADMIN_EMAIL="${DOCCANO_ADMIN_EMAIL}"
     command: ["/doccano/tools/run.sh", "webserver"]
     restart: unless-stopped
-    networks:
-      - bioext_network
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
@@ -31,8 +29,6 @@ services:
     restart: unless-stopped
     depends_on:
       - minio
-    networks:
-      - bioext_network
       
   minio:
     image: minio/minio:latest
@@ -46,9 +42,3 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
     command: server /data --console-address ":9001"
     restart: unless-stopped
-    networks:
-      - bioext_network
-
-networks:
-  bioext_network:
-    driver: bridge

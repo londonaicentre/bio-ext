@@ -9,9 +9,12 @@ mkdir -p "$DEPLOY_DIR/data/doccano"
 mkdir -p "$DEPLOY_DIR/data/mlflow"
 mkdir -p "$DEPLOY_DIR/data/minio"
 
-# copy docker-compose.yml
+# copy files to deployment directory
 cp docker-compose.yml "$DEPLOY_DIR/"
 echo "docker-compose.yml copied to $DEPLOY_DIR"
+
+cp mlflow-entrypoint.sh "$DEPLOY_DIR/"
+echo "mlflow-entrypoint.sh copied to $DEPLOY_DIR"
 
 # check if .env file exists, create if it doesn't, set new credentials
 if [ ! -f "$DEPLOY_DIR/.env" ]; then
@@ -55,12 +58,12 @@ timeout 60s bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 1
 
 # test MLFlow service
 echo "Testing MLflow artifact creation..."
-cp artifact_test.py "$DEPLOY_DIR/test_mlflow.py"
+cp artifact_test.py "$DEPLOY_DIR/artifact_test.py"
 docker run --rm --network host -v "$DEPLOY_DIR:/app" -w /app python:3.11.2 bash -c "
     pip install mlflow[extras] &&
     python artifact_test.py
 "
-rm "$DEPLOY_DIR/test_mlflow.py"
+rm "$DEPLOY_DIR/artifact_test.py"
 
 echo "Bio-ext environment started. You can access:"
 echo "Doccano at http://localhost:8000"
