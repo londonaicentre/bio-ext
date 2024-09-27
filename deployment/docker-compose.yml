@@ -1,13 +1,18 @@
 services:
-  labelstudio:
-    image: heartexlabs/label-studio:latest
+  doccano:
+    image: doccano/doccano:latest
     ports:
-      - "8080:8080"
+      - "8000:8000"
     volumes:
-      - ./data/labelstudio:/label-studio/data
+      - ./data/doccano:/data
     environment:
-      - LABEL_STUDIO_HOST=http://localhost
-      - LABEL_STUDIO_PORT=8080
+      - ADMIN_USERNAME="${DOCCANO_ADMIN_USERNAME}"
+      - ADMIN_PASSWORD="${DOCCANO_ADMIN_PASSWORD}"
+      - ADMIN_EMAIL="${DOCCANO_ADMIN_EMAIL}"
+    command: ["/doccano/tools/run.sh", "webserver"]
+    restart: unless-stopped
+    networks:
+      - bioext_network
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
@@ -16,15 +21,19 @@ services:
     volumes:
       - ./data/mlflow:/mlflow/data
     environment:
-      - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db
-      - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts
+      - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db #use sqlite in mounted volume for metadata
+      - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts #use s3 type storage instead of local dir
       - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
       - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
-      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000 
+    entrypoint: ["/bin/sh", "/mlflow-entrypoint.sh"]      
     command: mlflow server --host 0.0.0.0 --port 5000
+    restart: unless-stopped
     depends_on:
       - minio
-
+    networks:
+      - bioext_network
+      
   minio:
     image: minio/minio:latest
     ports:
@@ -36,3 +45,10 @@ services:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
     command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - bioext_network
+
+networks:
+  bioext_network:
+    driver: bridge
