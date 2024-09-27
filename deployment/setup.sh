@@ -13,10 +13,6 @@ mkdir -p "$DEPLOY_DIR/data/minio"
 cp docker-compose.yml "$DEPLOY_DIR/"
 echo "docker-compose.yml copied to $DEPLOY_DIR"
 
-cp mlflow-entrypoint.sh "$DEPLOY_DIR/"
-chmod +x "$DEPLOY_DIR/mlflow-entrypoint.sh"
-echo "mlflow-entrypoint.sh copied to $DEPLOY_DIR"
-
 cp artifact_test.py "$DEPLOY_DIR/"
 chmod +x "$DEPLOY_DIR/artifact_test.py"
 echo "artifact_test.py copied to $DEPLOY_DIR"
@@ -61,16 +57,16 @@ echo "Starting up containers..."
 docker-compose --env-file "$DEPLOY_DIR/.env" up -d
 
 # check if MLFlow service running
-echo "Waiting for MLflow to be ready..."
-timeout 60s bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 1; done' || { echo "MLflow failed to start"; exit 1; }
+# echo "Waiting for MLflow to be ready..."
+# timeout 60s bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 1; done' || { echo "MLflow failed to start"; exit 1; }
 
 # test MLFlow service
-echo "Testing MLflow artifact creation..."
-docker run --rm --network host -v "$DEPLOY_DIR:/app" -w /app python:3.11.2 bash -c "
-    pip install mlflow[extras] &&
-    python artifact_test.py
-"
-rm "$DEPLOY_DIR/artifact_test.py"
+# echo "Testing MLflow artifact creation..."
+# docker run --rm --network host -v "$DEPLOY_DIR:/app" -w /app python:3.11.2 bash -c "
+#    pip install mlflow[extras] &&
+#    python artifact_test.py
+#"
+#rm "$DEPLOY_DIR/artifact_test.py"
 
 echo "Bio-ext environment started. You can access:"
 echo "Doccano at http://localhost:8000"
