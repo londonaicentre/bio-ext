@@ -6,18 +6,23 @@ services:
     volumes:
       - doccano_data:/data
     environment:
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=adminpw
-      - ADMIN_EMAIL=admin@admin.com
+      - ADMIN_USERNAME=${DOCCANO_ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${DOCCANO_ADMIN_PASSWORD}
+      - ADMIN_EMAIL=${DOCCANO_ADMIN_EMAIL}
       - DJANGO_DB_ENGINE=django.db.backends.sqlite3
       - DJANGO_DB_NAME=/data/doccano.sqlite3
     command: ["/doccano/tools/run.sh", "webserver"]
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 3600s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G      
+    restart: unless-stopped
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
@@ -26,21 +31,26 @@ services:
     volumes:
       - mlflow_data:/mlflow/data
     environment:
-      - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db #use sqlite in mounted volume for metadata
-      - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts #use s3 type storage instead of local dir
-      - AWS_ACCESS_KEY_ID=DEVACCESSKEY
-      - AWS_SECRET_ACCESS_KEY=DEVSECRETKEY
-      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000      
-    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "${MLFLOW_TRACKING_URI}", "--default-artifact-root", "${MLFLOW_ARTIFACT_ROOT}"]
-    restart: unless-stopped
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_ARTIFACT_ROOT=${MLFLOW_ARTIFACT_ROOT}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "${MLFLOW_TRACKING_URI}", "--default-artifact-root", "${MLFLOW_ARTIFACT_ROOT}", "--artifacts-destination", "http://minio:9000/mlflow/"]
     depends_on:
       - minio
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/"]
       interval: 3600s
       timeout: 10s
-      retries: 3      
-      
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G            
+    restart: unless-stopped
+
   minio:
     image: minio/minio:latest
     ports:
@@ -49,15 +59,20 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      - MINIO_ROOT_USER=DEVACCESSKEY
-      - MINIO_ROOT_PASSWORD=DEVSECRETKEY
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     command: ["server", "/data", "--console-address", ":9001"]
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 3600s
       timeout: 10s
       retries: 3
+    deploy: 
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G      
+    restart: unless-stopped
 
 volumes:
   mlflow_data:

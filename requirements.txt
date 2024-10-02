@@ -1,0 +1,17 @@
+mlflow[extras]
+boto3
+scikit-learn
+numpy
+pandas
+scipy
+statsmodels
+transformers
+torch
+torchvision
+torchaudio
+tokenizers
+nltk
+spacy
+requests
+elasticsearch
+elasticsearch-dsl
