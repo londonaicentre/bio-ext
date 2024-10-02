@@ -13,6 +13,11 @@ services:
       - DJANGO_DB_NAME=/data/doccano.sqlite3
     command: ["/doccano/tools/run.sh", "webserver"]
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 3600s
+      timeout: 10s
+      retries: 3
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
@@ -23,13 +28,18 @@ services:
     environment:
       - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db #use sqlite in mounted volume for metadata
       - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts #use s3 type storage instead of local dir
-      - AWS_ACCESS_KEY_ID=${MINIO_ACCESS_KEY}
-      - AWS_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY}
+      - AWS_ACCESS_KEY_ID=DEVACCESSKEY
+      - AWS_SECRET_ACCESS_KEY=DEVSECRETKEY
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000      
-    command: mlflow server --host 0.0.0.0 --port 5000
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "${MLFLOW_TRACKING_URI}", "--default-artifact-root", "${MLFLOW_ARTIFACT_ROOT}"]
     restart: unless-stopped
     depends_on:
       - minio
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 3600s
+      timeout: 10s
+      retries: 3      
       
   minio:
     image: minio/minio:latest
@@ -39,10 +49,15 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
-    command: server /data --console-address ":9001"
+      - MINIO_ROOT_USER=DEVACCESSKEY
+      - MINIO_ROOT_PASSWORD=DEVSECRETKEY
+    command: ["server", "/data", "--console-address", ":9001"]
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 3600s
+      timeout: 10s
+      retries: 3
 
 volumes:
   mlflow_data:
