@@ -14,7 +14,7 @@ services:
     command: ["/doccano/tools/run.sh", "webserver"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
-      interval: 3600s
+      interval: 60s
       timeout: 10s
       retries: 3
     deploy:
@@ -36,12 +36,12 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "${MLFLOW_TRACKING_URI}", "--default-artifact-root", "${MLFLOW_ARTIFACT_ROOT}", "--artifacts-destination", "http://minio:9000/mlflow/"]
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "${MLFLOW_TRACKING_URI}", "--default-artifact-root", "${MLFLOW_ARTIFACT_ROOT}"]
     depends_on:
       - minio
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/"]
-      interval: 3600s
+      interval: 60s
       timeout: 10s
       retries: 3
     deploy:
@@ -64,7 +64,7 @@ services:
     command: ["server", "/data", "--console-address", ":9001"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 3600s
+      interval: 60s
       timeout: 10s
       retries: 3
     deploy: 
