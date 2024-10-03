@@ -7,7 +7,7 @@ import requests
 class GsttProxyNode(RequestsHttpNode):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.proxy_endpoint = os.getenv("ELASTIC_PROXY_ENDPOINT", "10.36.184.40:80")
+        self.proxy_endpoint = os.getenv("http_proxy")
         self.session.proxies = {"http": self.proxy_endpoint, "https":self.proxy_endpoint}
 
 class ElasticsearchSession:
