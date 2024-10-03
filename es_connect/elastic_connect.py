@@ -12,7 +12,7 @@ class GsttProxyNode(RequestsHttpNode):
 
 class ElasticsearchSession:
     def __init__(self, server=None):
-        requests.packages.urllib3.disable_warnings()
+        requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
         self.api_id = os.getenv("ELASTIC_API_ID")
         self.api_key = os.getenv("ELASTIC_API_KEY")
