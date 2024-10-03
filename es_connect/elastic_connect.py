@@ -1,14 +1,14 @@
 import os
-
 from elasticsearch import Elasticsearch
 from elastic_transport import RequestsHttpNode
 import requests
 
 # thanks @LAdams for implementing required http proxy
 class GsttProxyNode(RequestsHttpNode):
-    def __init__(self, *args, proxy_endpoint, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.session.proxies = {"http": proxy_endpoint, "https": proxy_endpoint}
+        self.proxy_endpoint = os.getenv("ELASTIC_PROXY_ENDPOINT", "10.36.184.40:80")
+        self.session.proxies = {"http": self.proxy_endpoint, "https":self.proxy_endpoint}
 
 class ElasticsearchSession:
     def __init__(self, server=None):
@@ -17,9 +17,8 @@ class ElasticsearchSession:
         self.api_id = os.getenv("ELASTIC_API_ID")
         self.api_key = os.getenv("ELASTIC_API_KEY")
         self.es_server = server or os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01:9200")
-        self.proxy_endpoint = os.getenv("ELASTIC_PROXY_ENDPOINT", "10.36.184.40:80")
 
-        self.proxy_node = GsttProxyNode(proxy_endpoint = self.proxy_endpoint) 
+        self.proxy_node = GsttProxyNode
 
         self.es = self.create_session()
 
