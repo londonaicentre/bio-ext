@@ -26,8 +26,8 @@ services:
     restart: unless-stopped
   
   mlflow:
-    image: ghcr.io/mlflow/mlflow:latest
-    container_name: mlflow_server
+    build:
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     volumes:
