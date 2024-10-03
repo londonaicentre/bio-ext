@@ -37,11 +37,6 @@ services:
       - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
       - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
     command: ["server", "/data", "--console-address", ":9001", "--address", ":9000"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
     deploy: 
       resources:
         limits:
@@ -50,8 +45,8 @@ services:
     restart: unless-stopped
     
   mlflow:
-    build:
-      dockerfile: Dockerfile
+    image: drjzhn/mlflow-boto:latest
+    container_name: mlflow_server
     ports:
       - "5000:5000"
     volumes:
