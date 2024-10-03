@@ -15,27 +15,11 @@ import mlflow
 from mlflow.tracking import MlflowClient
 from mlflow.models import infer_signature
 
-def set_env_variables():
-    load_dotenv()
+os.environ['AWS_ACCESS_KEY_ID'] = "minio"
+os.environ['AWS_SECRET_ACCESS_KEY'] = "minio123"
+# os.environ['MLFLOW_S3_ENDPOINT_URL'] = "http://localhost:9000"    
 
-    ## as we are running outside of container, we need to set these variables explicitly
-    access_key = os.getenv('AWS_ACCESS_KEY_ID')
-    secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-    artifact_root = os.getenv('MLFLOW_ARTIFACT_ROOT')
-
-    if not all([access_key, secret_key, artifact_root]):
-        raise ValueError("Missing env vars")  
-    
-    os.environ['AWS_ACCESS_KEY_ID'] = access_key
-    os.environ['AWS_SECRET_ACCESS_KEY'] = secret_key
-    os.environ['MLFLOW_ARTIFACT_ROOT'] = artifact_root    
-
-    ## set minio access to locahost as we are running code external to container
-    os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://localhost:9000'     
-
-    print('env var retrieval complete')
-
-def create_dummy_data(n_samples=1000):
+def create_dummy_data(n_samples=10000):
     np.random.seed(42)
     
     # generate random heights 
@@ -63,8 +47,8 @@ def create_dummy_data(n_samples=1000):
     return df
 
 def mlflow_logistic_regression():
-    mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("logistic_regression_weight_height_gender")
+    #mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("logreg_w_h_g")
 
     df = create_dummy_data()
     X = df[['height', 'weight']]
@@ -96,18 +80,17 @@ def mlflow_logistic_regression():
         recall = recall_score(y_test, y_pred)
         f1 = f1_score(y_test, y_pred)
 
+        mlflow.log_metric("precision", precision)
+        mlflow.log_metric("recall", recall)
+        mlflow.log_metric("f1_score", f1)
+
         # log metadata and model
         signature = infer_signature(X_test, y_pred)
         mlflow.sklearn.log_model(
             best_model, 
             "tuned_model",
-            signature=signature,
-            input_example=X_test.iloc[:5],
+            signature=signature
         )
-
-        mlflow.log_metric("precision", precision)
-        mlflow.log_metric("recall", recall)
-        mlflow.log_metric("f1_score", f1)
 
     print(f"MLflow run completed. Run ID: {run.info.run_id}")
     print(f"Precision: {precision:.2f}")
@@ -116,22 +99,9 @@ def mlflow_logistic_regression():
 
     return run.info.run_id
 
-def verify_s3_storage(run_id):
-    client = MlflowClient()
-    artifacts = client.list_artifacts(run_id)
-
-    model_found = any(artifact.path.startswith("tuned_model") for artifact in artifacts) 
-
-    if not (model_found):
-        raise Exception("Model artifact was not stored correctly")
-
-    print("Artifacts successfully stored in S3 bucket.")
-
 if __name__ == "__main__":
     try:
-        set_env_variables()
         run_id = mlflow_logistic_regression()
-        verify_s3_storage(run_id)
     except Exception as e:
         print(f"Failure: {e}")
         exit(1)

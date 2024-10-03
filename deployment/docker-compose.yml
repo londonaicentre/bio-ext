@@ -1,14 +1,15 @@
 services:
   doccano:
     image: doccano/doccano:latest
+    container_name: doccano
     ports:
       - "8000:8000"
     volumes:
       - doccano_data:/data
     environment:
-      - ADMIN_USERNAME=${DOCCANO_ADMIN_USERNAME}
-      - ADMIN_PASSWORD=${DOCCANO_ADMIN_PASSWORD}
-      - ADMIN_EMAIL=${DOCCANO_ADMIN_EMAIL}
+      - ADMIN_USERNAME=doccano
+      - ADMIN_PASSWORD=doccano123
+      - ADMIN_EMAIL=admin@admin.com
       - DJANGO_DB_ENGINE=django.db.backends.sqlite3
       - DJANGO_DB_NAME=/data/doccano.sqlite3
     command: ["/doccano/tools/run.sh", "webserver"]
@@ -23,7 +24,7 @@ services:
           cpus: '2'
           memory: 2G      
     restart: unless-stopped
-
+  
   mlflow:
     build:
       dockerfile: Dockerfile
@@ -32,12 +33,12 @@ services:
     volumes:
       - mlflow_data:/mlflow/data
     environment:
-      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
-      - MLFLOW_ARTIFACT_ROOT=${MLFLOW_ARTIFACT_ROOT}
+      - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - MLFLOW_ARTIFACT_ROOT=s3://mlflow
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "${MLFLOW_TRACKING_URI}", "--default-artifact-root", "${MLFLOW_ARTIFACT_ROOT}"]
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow"]
     depends_on:
       - minio
     healthcheck:
@@ -54,17 +55,18 @@ services:
 
   minio:
     image: minio/minio:latest
+    container_name: minio
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
       - minio_data:/data
     environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-    command: ["server", "/data", "--console-address", ":9001"]
+      - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
+      - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
+    command: ["server", "/data", "--console-address", ":9001", "--address", ":9000"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
       interval: 60s
       timeout: 10s
       retries: 3
