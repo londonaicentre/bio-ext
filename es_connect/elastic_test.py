@@ -6,7 +6,7 @@ import requests
 
 ## credit @LAdams for enabling http proxy in ES connection
 
-requests.packages.urllib3,disable_warnings()
+requests.packages.urllib3.disable_warnings()
 
 load_dotenv()
 
