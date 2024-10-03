@@ -21,14 +21,13 @@ query = {
     "query": {
         "bool": {
             "must": [
-                {"term": {"document_Name.keyword": "Clinical-MDM"}},
                 {"wildcard": {"document_Content": "*breast*"}}
             ]
         }
     }
 }
 
-results = es_session.es.search(index="gstt_clinical_cancer_documents", body=query)
+results = es_session.es.search(index="gstt_clinical_geneworks_documents", body=query)
 
 print("\nSearch Results:")
 print(f"Total: {results['hits']['total']['value']}")
