@@ -1,5 +1,7 @@
 from elasticsearch_session import ElasticsearchSession
+from dotenv import load_dotenv
 
+load_dotenv()
 es_session = ElasticsearchSession()
 
 # get info
@@ -7,8 +9,8 @@ info = es_session.get_info()
 print("Elasticsearch Info:")
 print(info)
 
-# list indexes
-indexes = es_session.list_indexes()
-print("\nElasticsearch Indexes:")
-for index in indexes:
+# list indices
+indices = es_session.list_indices()
+print("\nElasticsearch Indices:")
+for index in indices:
     print(index)

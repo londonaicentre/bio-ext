@@ -1,5 +1,5 @@
 import os
-from dotenv import load_dotenv
+
 from elasticsearch import Elasticsearch
 from elastic_transport import RequestsHttpNode
 import requests
@@ -14,8 +14,6 @@ class GsttProxyNode(RequestsHttpNode):
 class ElasticsearchSession:
     def __init__(self, server=None):
         requests.packages.urllib3.disable_warnings()
-
-        load_dotenv()
 
         self.api_id = os.getenv("ELASTIC_API_ID")
         self.api_key = os.getenv("ELASTIC_API_KEY")
@@ -38,7 +36,7 @@ class ElasticsearchSession:
     def get_info(self):
         return self.es.info()
     
-    def list_indexes(self):
+    def list_indices(self):
         return self.es.indices.get_alias(index="*")    
 
     def search(self, index, body):
