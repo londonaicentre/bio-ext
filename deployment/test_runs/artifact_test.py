@@ -1,5 +1,9 @@
+# log_reg synthetic weight/height vs gender
 # test creation of artifacts using MLFlow and Minio
+
 import os
+import warnings
+
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
@@ -47,8 +51,10 @@ def create_dummy_data(n_samples=10000):
     return df
 
 def mlflow_logistic_regression():
+    warnings.filterwarnings("ignore")
+    
     #mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("logreg_w_h_g")
+    mlflow.set_experiment("test_logreg_w_h_g")
 
     df = create_dummy_data()
     X = df[['height', 'weight']]

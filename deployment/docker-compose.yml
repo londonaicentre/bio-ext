@@ -24,7 +24,31 @@ services:
           cpus: '2'
           memory: 2G      
     restart: unless-stopped
-  
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    environment:
+      - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
+      - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
+    command: ["server", "/data", "--console-address", ":9001", "--address", ":9000"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    deploy: 
+      resources:
+        limits:
+          cpus: '2'
+          memory: 8G      
+    restart: unless-stopped
+    
   mlflow:
     build:
       dockerfile: Dockerfile
@@ -51,30 +75,6 @@ services:
         limits:
           cpus: '2'
           memory: 8G            
-    restart: unless-stopped
-
-  minio:
-    image: minio/minio:latest
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-    environment:
-      - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
-      - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
-    command: ["server", "/data", "--console-address", ":9001", "--address", ":9000"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-    deploy: 
-      resources:
-        limits:
-          cpus: '2'
-          memory: 8G      
     restart: unless-stopped
 
 volumes:
