@@ -1,4 +1,4 @@
-from elastic_connect import GsttProxyNode, ElasticsearchSession
+from scripts.elastic_connect import GsttProxyNode, ElasticsearchSession
 from dotenv import load_dotenv
 
 load_dotenv()
