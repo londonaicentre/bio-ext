@@ -10,7 +10,6 @@ class GsttProxyNode(RequestsHttpNode):
         super().__init__(*args, **kwargs)
         self.session.proxies = {"http": proxy_endpoint, "https": proxy_endpoint}
 
-
 class ElasticsearchSession:
     def __init__(self, server=None):
         requests.packages.urllib3.disable_warnings()
