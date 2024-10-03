@@ -17,7 +17,7 @@ query = {
     "query": {
         "bool": {
             "must": [
-                {"wildcard": {"document_Content": "*brca*"}}
+                {"wildcard": {"document_Content": "*brca*"}},
                 {"wildcard": {"document_Content": "*breast*"}}                
             ]
         }
