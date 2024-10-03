@@ -31,11 +31,5 @@ class ElasticsearchSession:
             ssl_show_warn=False
         )
 
-    def get_info(self):
-        return self.es.info()
-    
     def list_indices(self):
-        return self.es.indices.get_alias(index="*")    
-
-    def search(self, index, body):
-        return self.es.search(index=index, body=body)
+        return self.es.indices.get_alias(index="*")
