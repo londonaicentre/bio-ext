@@ -5,7 +5,7 @@ load_dotenv()
 es_session = ElasticsearchSession()
 
 # get info
-info = es_session.get_info()
+info = es_session.es.info()
 print("Elasticsearch Info:")
 print(info)
 
@@ -28,7 +28,7 @@ query = {
     }
 }
 
-results = es_session.search(index="gstt_clinical_cancer_documents", body=query)
+results = es_session.es.search(index="gstt_clinical_cancer_documents", body=query)
 
 print("\nSearch Results:")
 print(f"Total: {results['hits']['total']['value']}")
