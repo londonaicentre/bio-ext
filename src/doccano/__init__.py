@@ -1,1 +1,0 @@
-# src/doccano/__init__.py

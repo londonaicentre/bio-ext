@@ -1,0 +1,1 @@
+# src/project_registration/scripts/__init__.py
