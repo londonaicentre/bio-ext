@@ -1,6 +1,7 @@
+import root_directory
 import os
 import json
-from scripts.elastic_connect import ElasticsearchSession, GsttProxyNode
+from src.elastic_connect import ElasticsearchSession, GsttProxyNode
 from dotenv import load_dotenv
 from elasticsearch import helpers
 

@@ -1,7 +1,6 @@
-from scripts.elastic_connect import GsttProxyNode, ElasticsearchSession
-from dotenv import load_dotenv
+import root_directory
+from src.elastic_connect import GsttProxyNode, ElasticsearchSession
 
-load_dotenv()
 es_session = ElasticsearchSession()
 
 # get info
