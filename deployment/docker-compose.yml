@@ -54,10 +54,10 @@ services:
     environment:
       - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-      - MLFLOW_ARTIFACT_ROOT=s3://mlflow
+      - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow"]
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow-artifacts"]
     depends_on:
       - minio
     healthcheck:

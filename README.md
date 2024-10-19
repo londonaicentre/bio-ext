@@ -1,8 +1,53 @@
 # bio-ext
-Biomarker and deep phenotype extraction platform, as an extension to CogStack, or other unstructured data stores in hospital EHR systems 
+Biomarker and deep phenotype extraction platform, as an extension to CogStack, or other unstructured data stores in hospital EHR systems.
 
+### Set up Python environment
 
-## Elasticsearch connector
+Using preferred virtual environment manager, run:
+```
+pip install -r requirements.txt
+```
+
+### Set up environmental variables
+
+(1) Create a copy of `.env.example` as `.env` and insert variables as provided by administrators
+
+(2) Add environmental variables to shell configuration.
+```
+MacOS: nano ~/.bash_profile
+Ubuntu: nano ~/.bashrc
+```
+
+(3) To apply changes, either `source` file or restart the terminal
+
+### Bio-ext deployment
+
+(1) From `/deployment`, run:
+```
+docker-compose up -d
+```
+
+(2) Check that services are running on:
+```
+Doccano: http://localhost:8000
+MLFlow: http://localhost:5000
+Minio: http://localhost:9001
+```
+
+### Test ML run
+
+(1) For logistic regression on synthetic weight and height data, from `/deployment/test_runs/`, run:
+```
+python logreg_whg_test.py
+```
+
+(2) For wine quality elasticnet test, from `/deployment/test_runs/`, run:
+```
+python wine_test.py
+```
+(3) Log onto MLFlow frontend to confirm experiment logging, and check that model artifacts are stored and registered. Model artifacts can also be directly viewed by logging into Minio.
+
+### Elasticsearch connector
 Usage
 
 ```

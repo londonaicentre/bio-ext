@@ -1,7 +1,7 @@
 
 # custom env setup
-deployment/var_load_macos.sh
-deployment/var_load_ubuntu.sh
+deployment/load_var_macos.sh
+deployment/load_var_ubuntu.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

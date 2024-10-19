@@ -7,26 +7,25 @@ import sys
 
 import pandas as pd
 import numpy as np
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet
 
 import mlflow
 import mlflow.sklearn
 
-
 def eval_metrics(actual, pred):
-    rmse = np.sqrt(mean_squared_error(actual, pred))
+    rmse = np.sqrt(root_mean_squared_error(actual, pred))
     mae = mean_absolute_error(actual, pred)
     r2 = r2_score(actual, pred)
     return rmse, mae, r2
 
-
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
+    
+    mlflow.set_tracking_uri("http://localhost:5000")
+    
     np.random.seed(40)
-
-    mlflow.set_experiment("test_wine_elasticnet")
 
     # Read the wine-quality csv file (make sure you're running this from the root of MLflow!)
     wine_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wine-quality.csv")
