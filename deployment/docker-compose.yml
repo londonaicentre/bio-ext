@@ -7,9 +7,9 @@ services:
     volumes:
       - doccano_data:/data
     environment:
-      - ADMIN_USERNAME=doccano
-      - ADMIN_PASSWORD=doccano123
-      - ADMIN_EMAIL=admin@admin.com
+      - ADMIN_USERNAME=${DOCCANO_ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${DOCCANO_ADMIN_PASSWORD}
+      - ADMIN_EMAIL=${DOCCANO_ADMIN_EMAIL}
       - DJANGO_DB_ENGINE=django.db.backends.sqlite3
       - DJANGO_DB_NAME=/data/doccano.sqlite3
     command: ["/doccano/tools/run.sh", "webserver"]

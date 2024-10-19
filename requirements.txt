@@ -16,3 +16,6 @@ requests
 elasticsearch
 elasticsearch-dsl
 elastic-transport
+doccano-client
+requests-toolbelt==1.0.0
+vcrpy==4.4.0
