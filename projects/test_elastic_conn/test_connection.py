@@ -1,5 +1,5 @@
 import root_directory
-from src.elastic_connect import GsttProxyNode, ElasticsearchSession
+from src.elastic_utils import GsttProxyNode, ElasticsearchSession
 
 es_session = ElasticsearchSession()
 

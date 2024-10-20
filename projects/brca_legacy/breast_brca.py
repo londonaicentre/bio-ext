@@ -1,8 +1,7 @@
 import root_directory
 import os
 import json
-from src.elastic_connect import ElasticsearchSession, GsttProxyNode
-from dotenv import load_dotenv
+from src.elastic_utils import ElasticsearchSession, GsttProxyNode
 from elasticsearch import helpers
 
 project_name = "breast_brca_status"
@@ -11,7 +10,6 @@ base_dir = "/mnt/dgxstorage/es_stg"
 project_dir = os.path.join(base_dir, project_name)
 os.makedirs(project_dir, exist_ok=False)
 
-load_dotenv()
 es_session = ElasticsearchSession()
 
 query = {
