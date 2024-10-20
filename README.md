@@ -1,6 +1,33 @@
 # bio-ext
 Biomarker and deep phenotype extraction platform, as an extension to CogStack, or other unstructured data stores in hospital EHR systems.
 
+## Project Structure
+
+`bio-ext` is set-up as a monorepo.
+
+- `/deployment` deploying MLOps environment
+- `/src` utility packages for imports
+- `/projects` individual projects that contain labelling/model development scripts
+
+```
+|deployment
+|--docker-compose.yml
+|
+|src
+|--doccano_utils.py
+|--elastic_utils.py
+|
+|projects
+|--test_ml_runs
+|--project_a
+|--project_b
+|
+|README.md
+|requirements.txt
+``` 
+
+## Getting Started
+
 ### Set up Python environment
 
 Using preferred virtual environment manager, run:
@@ -48,17 +75,7 @@ python wine_test.py
 
 (3) Log onto MLFlow frontend to confirm experiment logging, and check that model artifacts are stored and registered. Model artifacts can also be directly viewed by logging into Minio.
 
-### Elasticsearch connector
-Usage
-
-```
-from elastic_connect import ElasticsearchSession
-session = ElasticsearchSession()
-## OR
-session = ElasticsearchSession(server="https://sv-pr-elastic01:9200")
-```
-
-### Absolute imports into scripts
+### Absolute imports
 
 To enable imports from packages in `/src` into `__main__` scripts found in `/projects`, make `root_directory` the first import within the script, and use absolute imports. For example:
 ```

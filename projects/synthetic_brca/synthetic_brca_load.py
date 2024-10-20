@@ -40,4 +40,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    print("Setup complete")
+    print("\nSetup complete")

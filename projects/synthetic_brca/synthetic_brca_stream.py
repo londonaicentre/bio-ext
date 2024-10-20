@@ -14,10 +14,10 @@ def main():
 
     # print labelled samples
     for i, (text, labels) in enumerate(labelled_samples, 1):
-        print(f"Sample {i}:")
+        print(f"\nSample {i}:")
         print(f"Text: {text[:100]}...")
         print(f"Labels: {labels}")
 
 if __name__ == "__main__":
     main()
-    print("Processing complete")
+    print("\nProcessing complete")
