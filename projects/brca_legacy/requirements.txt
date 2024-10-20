@@ -1,1 +1,1 @@
-../../bioext
+-e ../../bioext
