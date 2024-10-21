@@ -1,7 +1,6 @@
-import root_directory
 import os
 import json
-from src.elastic_utils import ElasticsearchSession, GsttProxyNode
+from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
 from elasticsearch import helpers
 
 project_name = "breast_brca_status"

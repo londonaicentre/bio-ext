@@ -1,0 +1,26 @@
+[project]
+name = "bioext"
+version = "0.1.0"
+description = "A series of helper functions for for bio-ext"
+authors = [
+    { name = "Joe Zhang", email = "joe.zhang@gstt.nhs.uk" },
+    { name = "Lawrence Adams", email = "lawrence.adams@gstt.nhs.uk" },
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mlflow[extras]",
+    "boto3",
+    "requests",
+    "elasticsearch",
+    "elasticsearch-dsl",
+    "elastic-transport",
+    "doccano-client",
+    "requests-toolbelt==1.0.0", # Required for doccano-client
+    "vcrpy==4.4.0",             # Required for doccano-client
+]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
