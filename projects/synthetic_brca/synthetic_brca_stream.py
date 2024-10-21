@@ -2,7 +2,7 @@ import root_directory
 from bioext.doccano_utils import DoccanoSession
 
 ########################## DEFINE SET-UP VARIABLES ##########################
-PROJECT_ID = 7
+PROJECT_ID = 6
 #############################################################################
 
 def main():

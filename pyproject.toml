@@ -16,8 +16,7 @@ dependencies = [
     "elasticsearch-dsl",
     "elastic-transport",
     "doccano-client",
-    "requests-toolbelt==1.0.0", # Required for doccano-client
-    "vcrpy==4.4.0",             # Required for doccano-client
+    "urllib3==1.26"     
 ]
 
 [build-system]
@@ -26,3 +25,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bioext"]
+
+# "requests-toolbelt==1.0.0", # Required for doccano-client #
+# "vcrpy==4.4.0",             # Required for doccano-client #

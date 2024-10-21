@@ -12,7 +12,7 @@ class DoccanoSession:
     def create_session(self):
         """
         Connect and log on to a Doccano server
-        """
+        """      
         client = DoccanoClient(self.server)
         client.login(username=self.username, password=self.password)
         self.user = client.get_profile()
