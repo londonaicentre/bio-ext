@@ -34,8 +34,8 @@ services:
     volumes:
       - minio_data:/data
     environment:
-      - MINIO_ROOT_USER=${AWS_ACCESS_KEY_ID}
-      - MINIO_ROOT_PASSWORD=${AWS_SECRET_ACCESS_KEY}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     command: ["server", "/data", "--console-address", ":9001", "--address", ":9000"]
     deploy: 
       resources:
@@ -52,9 +52,9 @@ services:
     volumes:
       - mlflow_data:/mlflow/data
     environment:
-      - MLFLOW_TRACKING_URI=sqlite:///mlflow/data/mlflow.db
-      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-      - MLFLOW_ARTIFACT_ROOT=s3://mlflow-artifacts
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}
+      - MLFLOW_ARTIFACT_ROOT=${MLFLOW_ARTIFACT_ROOT}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow-artifacts"]
