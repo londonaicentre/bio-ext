@@ -1,6 +1,6 @@
 import root_directory
 import json
-from src.doccano_utils import DoccanoSession
+from bioext.doccano_utils import DoccanoSession
 
 ########################## DEFINE SET-UP VARIABLES ##########################
 PROJECT_DETAILS = {

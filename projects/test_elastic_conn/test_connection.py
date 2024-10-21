@@ -1,5 +1,5 @@
 import root_directory
-from src.elastic_utils import GsttProxyNode, ElasticsearchSession
+from bioext.elastic_utils import GsttProxyNode, ElasticsearchSession
 
 es_session = ElasticsearchSession()
 
