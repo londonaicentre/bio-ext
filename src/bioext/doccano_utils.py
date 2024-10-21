@@ -32,7 +32,8 @@ class DoccanoSession:
             self.current_project_id = project.id
             return project
         except Exception as e:
-            print(f"Failed to create project: {str(e)}")
+            print(f"Failed to create project")
+            raise e
 
     def setup_labels(self, labels, project_id=None):
         """
@@ -49,7 +50,8 @@ class DoccanoSession:
                     text=label
                 )
         except Exception as e:
-            print(f"Failed to setup labels: {str(e)}")
+            print(f"Failed to setup labels")
+            raise e
 
     def load_simple_json(self, data, project_id=None):
         """

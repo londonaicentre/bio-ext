@@ -6,12 +6,13 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 `bio-ext` is set-up as a monorepo.
 
 - `/deployment` deploying MLOps environment
-- `/src` bioext package that is imported into projects
+- `/src` bioext package that is imported into projects, containing utils for interacting with environment
 - `/projects` individual projects that contain labelling/model development scripts, not part of bioext package
 
 ```
 |deployment/
 |--docker-compose.yml
+|--.env
 |
 |src/
 |--bioext/
@@ -20,6 +21,7 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 |----elastic_utils.py
 |
 |projects/
+|--.env
 |--test_ml_runs/
 |----requirements.txt
 |--project_a/
@@ -35,22 +37,25 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 
 ### Set up Python environment
 
-Using preferred virtual environment manager, run:
+For the active project, and using preferred virtual environment manager, run:
 ```
 pip install -r requirements.txt
 ```
+As well as other packages, this must contain `-e ../../` to install bioext as an editable package.  
 
 ### Set up environmental variables
 
-(1) From `/deployment/`, create a copy of `.env.example` as `.env` and insert variables as provided by administrators
+(1) (First time set-up) In `/deployment/`, create a copy of `.env.example` as `.env` and configure variables prior to docker-compose.
 
-(2) Add environmental variables to shell configuration.
+(2) From `/projects/`, create a copy of `.env.example` as `.env` and insert variables as provided by administrators.
+
+(3) Add environmental variables to shell configuration.
 ```
-MacOS: nano ~/.bash_profile
+MacOS: nano ~/.profile
 Ubuntu: nano ~/.bashrc
 ```
 
-(3) To apply changes, either `source` file or restart the terminal
+(4) To apply changes, `source` the relevant configuration file
 
 ### Bio-ext deployment
 
@@ -79,11 +84,3 @@ python wine_test.py
 ```
 
 (3) Log onto MLFlow frontend to confirm experiment logging, and check that model artifacts are stored and registered. Model artifacts can also be directly viewed by logging into Minio.
-
-### Absolute imports
-
-To enable imports from packages in `/src` into `__main__` scripts found in `/projects`, make `root_directory` the first import within the script, and use absolute imports. For example:
-```
-import root_directory
-from src.elastic_connect import ElasticsearchSession
-```

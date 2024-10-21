@@ -16,7 +16,7 @@ class ElasticsearchSession:
 
         self.api_id = os.getenv("ELASTIC_API_ID")
         self.api_key = os.getenv("ELASTIC_API_KEY")
-        self.es_server = server or os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01:9200")
+        self.es_server = server or os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01:9200") # set to GSTT server by default
 
         self.proxy_node = GsttProxyNode
 
