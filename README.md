@@ -47,7 +47,7 @@ As well as other packages, this must contain `-e ../../` to install bioext as an
 
 (1) (First time set-up) In `/deployment/`, create a copy of `.env.example` as `.env` and configure variables prior to docker-compose.
 
-(2) From `/projects/`, add variables found in `.env.example` as provided by administrators to shell configuration:
+(2) From `/projects/`, add variables found in `.env.example` as provided by administrators to shell configuration. These are variables that will be used across different bioext projects. 
 ```
 MacOS: nano ~/.profile
 Ubuntu: nano ~/.bashrc
