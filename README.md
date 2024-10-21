@@ -6,24 +6,29 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 `bio-ext` is set-up as a monorepo.
 
 - `/deployment` deploying MLOps environment
-- `/src` utility packages for imports
-- `/projects` individual projects that contain labelling/model development scripts
+- `/src` bioext package that is imported into projects
+- `/projects` individual projects that contain labelling/model development scripts, not part of bioext package
 
 ```
-|deployment
+|deployment/
 |--docker-compose.yml
 |
-|src
-|--doccano_utils.py
-|--elastic_utils.py
+|src/
+|--bioext/
+|----__init__.py
+|----doccano_utils.py
+|----elastic_utils.py
 |
-|projects
-|--test_ml_runs
-|--project_a
-|--project_b
+|projects/
+|--test_ml_runs/
+|----requirements.txt
+|--project_a/
+|----requirements.txt
+|--project_b/
+|----requirements.txt
 |
+|pyproject.toml
 |README.md
-|requirements.txt
 ``` 
 
 ## Getting Started
