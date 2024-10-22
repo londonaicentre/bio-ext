@@ -6,7 +6,6 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from dotenv import load_dotenv
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -18,10 +17,6 @@ from sklearn.model_selection import GridSearchCV
 import mlflow
 from mlflow.tracking import MlflowClient
 from mlflow.models import infer_signature
-
-os.environ['AWS_ACCESS_KEY_ID'] = "minio"
-os.environ['AWS_SECRET_ACCESS_KEY'] = "minio123"
-# os.environ['MLFLOW_S3_ENDPOINT_URL'] = "http://localhost:9000"    
 
 def create_dummy_data(n_samples=10000):
     np.random.seed(42)
@@ -53,8 +48,8 @@ def create_dummy_data(n_samples=10000):
 def mlflow_logistic_regression():
     warnings.filterwarnings("ignore")
     
-    #mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("test_logreg_w_h_g")
+    mlflow.set_tracking_uri("http://localhost:5000")
+    # mlflow.set_experiment("test_logreg_w_h_g")
 
     df = create_dummy_data()
     X = df[['height', 'weight']]
