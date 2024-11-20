@@ -1,7 +1,7 @@
 services:
   doccano:
     image: doccano/doccano:latest
-    container_name: doccano
+    container_name: doccano_bioext
     ports:
       - "8000:8000"
     volumes:
@@ -27,7 +27,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: minio
+    container_name: minio_bioext
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -46,7 +46,7 @@ services:
     
   mlflow:
     image: drjzhn/mlflow-boto:latest
-    container_name: mlflow_server
+    container_name: mlflow_bioext
     ports:
       - "5000:5000"
     volumes:
