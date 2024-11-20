@@ -1,7 +1,7 @@
 services:
   doccano:
     image: doccano/doccano:latest
-    container_name: doccano_bioext
+    container_name: bioext_doccano
     ports:
       - "8000:8000"
     volumes:
@@ -13,11 +13,11 @@ services:
       - DJANGO_DB_ENGINE=django.db.backends.sqlite3
       - DJANGO_DB_NAME=/data/doccano.sqlite3
     command: ["/doccano/tools/run.sh", "webserver"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
+    ## healthcheck:
+    ##  test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+    ##  interval: 60s
+    ##  timeout: 10s
+    ##  retries: 3
     deploy:
       resources:
         limits:
@@ -27,7 +27,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: minio_bioext
+    container_name: bioext_minio
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -46,7 +46,7 @@ services:
     
   mlflow:
     image: drjzhn/mlflow-boto:latest
-    container_name: mlflow_bioext
+    container_name: bioext_mlflow
     ports:
       - "5000:5000"
     volumes:
@@ -60,11 +60,11 @@ services:
     command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow-artifacts"]
     depends_on:
       - minio
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+    #   interval: 60s
+    #   timeout: 10s
+    #   retries: 3
     deploy:
       resources:
         limits:
