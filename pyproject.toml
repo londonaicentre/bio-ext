@@ -16,7 +16,7 @@ dependencies = [
     "elasticsearch-dsl",
     "elastic-transport",
     "doccano-client",
-    "urllib3==1.26"     
+    "urllib3"     
 ]
 
 [build-system]
