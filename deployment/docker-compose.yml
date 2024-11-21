@@ -45,7 +45,9 @@ services:
     restart: unless-stopped
     
   mlflow:
-    image: drjzhn/mlflow-boto:latest
+    build:
+      dockerfile: ./mlflow.Dockerfile
+      network: host
     container_name: bioext_mlflow
     ports:
       - "5000:5000"
@@ -57,7 +59,7 @@ services:
       - MLFLOW_ARTIFACT_ROOT=${MLFLOW_ARTIFACT_ROOT}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow-artifacts"]
+    command: ["--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow-artifacts"]
     depends_on:
       - minio
     # healthcheck:
