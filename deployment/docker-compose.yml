@@ -53,14 +53,15 @@ services:
     volumes:
       - mlflow_data:/mlflow/data
     environment:
-      # - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
       - MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}
       - MLFLOW_S3_IGNORE_TLS=true
       - AWS_DEFAULT_REGION=minio
-      # - MLFLOW_ARTIFACT_ROOT=${MLFLOW_ARTIFACT_ROOT}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - MLFLOW_LOGGING_LEVEL=DEBUG
+      # required to bypass Trust proxies to communicate with Minio
+      - no_proxy=bioextminio,localhost,127.0.0.1,.bioext_network
+      - NO_PROXY=bioextminio,localhost,127.0.0.1,.bioext_network      
     command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--artifacts-destination", "s3://mlflow-artifacts", "--serve-artifacts"]
     depends_on:
       - minio
