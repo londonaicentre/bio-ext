@@ -14,6 +14,12 @@ from sklearn.linear_model import ElasticNet
 import mlflow
 import mlflow.sklearn
 
+from dotenv import load_dotenv
+load_dotenv()
+
+# Override MinIO endpoint for local access
+os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://localhost:9000'
+
 def eval_metrics(actual, pred):
     rmse = np.sqrt(root_mean_squared_error(actual, pred))
     mae = mean_absolute_error(actual, pred)
@@ -27,9 +33,7 @@ if __name__ == "__main__":
     
     np.random.seed(40)
 
-    # Read the wine-quality csv file (make sure you're running this from the root of MLflow!)
-    wine_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wine-quality.csv")
-    data = pd.read_csv(wine_path)
+    data = pd.read_csv("data/wine-quality.csv")
 
     # Split the data into training and test sets. (0.75, 0.25) split.
     train, test = train_test_split(data)

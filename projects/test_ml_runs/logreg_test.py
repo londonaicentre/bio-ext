@@ -18,6 +18,12 @@ import mlflow
 from mlflow.tracking import MlflowClient
 from mlflow.models import infer_signature
 
+from dotenv import load_dotenv
+load_dotenv()
+
+# Override MinIO endpoint for local access
+os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://localhost:9000'
+
 def create_dummy_data(n_samples=10000):
     np.random.seed(42)
     
