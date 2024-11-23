@@ -1,5 +1,7 @@
-import root_directory
 from bioext.elastic_utils import GsttProxyNode, ElasticsearchSession
+
+from dotenv import load_dotenv
+load_dotenv()
 
 es_session = ElasticsearchSession()
 
