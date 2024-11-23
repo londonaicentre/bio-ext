@@ -1,4 +1,3 @@
-import root_directory
 import json
 from bioext.doccano_utils import DoccanoSession
 
