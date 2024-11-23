@@ -2,6 +2,9 @@ import root_directory
 import json
 from bioext.doccano_utils import DoccanoSession
 
+from dotenv import load_dotenv
+load_dotenv()
+
 ########################## DEFINE SET-UP VARIABLES ##########################
 PROJECT_DETAILS = {
     'name': 'Testing Class: Synthetic BRCA Classification',
