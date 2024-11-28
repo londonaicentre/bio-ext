@@ -1,0 +1,3 @@
+[submodule "deployment/mlflow-boto-docker"]
+	path = deployment/mlflow-boto-docker
+	url = https://github.com/d3london/mlflow-boto-docker.git
