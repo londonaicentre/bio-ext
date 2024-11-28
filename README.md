@@ -24,10 +24,13 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 |--.env
 |--test_ml_runs/
 |----requirements.txt
+|----.env
 |--project_a/
 |----requirements.txt
+|----.env
 |--project_b/
 |----requirements.txt
+|----.env
 |
 |pyproject.toml
 |README.md
@@ -37,37 +40,41 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 
 ### Set up Python environment
 
-For the active project, and using preferred virtual environment manager, run:
+Requirements should be configured per project, using preferred virtual environment manager. e.g.:
 ```
 pip install -r requirements.txt
 ```
 As well as other packages, this must contain `-e ../../` to install bioext as an editable package.  
 
-### Set up environmental variables
+### First time set-up (admin)
 
-(1) (First time set-up) In `/deployment/`, create a copy of `.env.example` as `.env` and configure variables prior to docker-compose.
+(1) In `/deployment/`, create a copy of `.env.example` as `.env` and configure variables prior to docker-compose.
 
-(2) From `/projects/`, add variables found in `.env.example` as provided by administrators to shell configuration. These are variables that will be used across different bioext projects. 
-```
-MacOS: nano ~/.profile
-Ubuntu: nano ~/.bashrc
-```
-
-(3) To apply changes, `source` the relevant configuration file
-
-### Bio-ext deployment
-
-(1) From `/deployment/`, run:
+(2) From `/deployment/`, run:
 ```
 docker-compose up -d
 ```
 
-(2) Check that services are running on:
+(3) Check that services are running on:
 ```
 Doccano: http://localhost:8000
 MLFlow: http://localhost:5000
 Minio: http://localhost:9001
 ```
+
+(4) Log into the Minio UI, set up a new bucket called mlflow-artifacts
+
+(5) Log into the Minio UI, set up a new Access Key / Secret, and enter it into the local .env file
+
+(6) Run:
+```
+docker-compose down
+docker-compose up -d
+```
+
+### Environment variables for projects
+
+Necessary environmental variables should be separately configured as .env files for each project in `/projects/`, and loaded using load_dotenv()
 
 ### Test ML run
 
@@ -81,4 +88,4 @@ python logreg_whg_test.py
 python wine_test.py
 ```
 
-(3) Log onto MLFlow frontend to confirm experiment logging, and check that model artifacts are stored and registered. Model artifacts can also be directly viewed by logging into Minio.
+(3) Log onto MLFlow frontend to confirm experiment logging, and check that model artifacts are stored and registered in S3. Model artifacts can also be directly viewed by logging into Minio.

@@ -3,6 +3,9 @@ import json
 from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
 from elasticsearch import helpers
 
+from dotenv import load_dotenv
+load_dotenv()
+
 project_name = "breast_brca_status"
 base_dir = "/mnt/dgxstorage/es_stg"
 

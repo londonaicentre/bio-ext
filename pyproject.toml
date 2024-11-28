@@ -15,8 +15,7 @@ dependencies = [
     "elasticsearch",
     "elasticsearch-dsl",
     "elastic-transport",
-    "doccano-client",
-    "urllib3"     
+    "doccano-client @ git+https://github.com/drjzhn/doccano-client-urrlib-fix.git",
 ]
 
 [build-system]
@@ -26,5 +25,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/bioext"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 # "requests-toolbelt==1.0.0", # Required for doccano-client #
 # "vcrpy==4.4.0",             # Required for doccano-client #
+# "urllib3==1.26"             # This works for doccano-client 1.2.8 but ?breaks elastic#   
