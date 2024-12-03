@@ -39,11 +39,10 @@ class ElasticsearchSession:
 
             self.es = Elasticsearch(
                 hosts=self.es_server,
-                http_auth=(self.es_user, self.es_pwd),
+                basic_auth=(self.es_user, self.es_pwd),
                 verify_certs=False,
                 ssl_show_warn=False
             )
-
 
     def list_indices(self):
         return self.es.indices.get_alias(index="*")
