@@ -5,12 +5,17 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 
 `bio-ext` is set-up as a monorepo.
 
-- `/deployment` deploying MLOps environment
+- `/deployment` deploying MLOps environment in production
+- `/deployment_local` deploying MLOps and ElasticSearch in local dev environment
 - `/src` bioext package that is imported into projects, containing utils for interacting with environment
 - `/projects` individual projects that contain labelling/model development scripts, not part of bioext package
 
 ```
 |deployment/
+|--docker-compose.yml
+|--.env
+|
+|deployment_local/
 |--docker-compose.yml
 |--.env
 |
@@ -21,7 +26,6 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 |----elastic_utils.py
 |
 |projects/
-|--.env
 |--test_ml_runs/
 |----requirements.txt
 |----.env
