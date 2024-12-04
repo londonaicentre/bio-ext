@@ -29,24 +29,30 @@ class ElasticsearchSession:
                 if not all([self.api_id, self.api_key]):
                     raise ValueError("Check that ELASTIC_API_ID and ELASTIC_API_KEY are in env variables")
 
-            self.es = Elasticsearch(
-                hosts=self.es_server,
-                api_key=(self.api_id, self.api_key),
-                node_class=self.proxy_node,
-                verify_certs=False,
-                ssl_show_warn=False
-            )
+                self.es = Elasticsearch(
+                    hosts=self.es_server,
+                    api_key=(self.api_id, self.api_key),
+                    node_class=self.proxy_node,
+                    verify_certs=False,
+                    ssl_show_warn=False
+                )
 
-        if conn_mode == "HTTP":
-            self.es_user = os.getenv("ELASTIC_USER")
-            self.es_pwd = os.getenv("ELASTIC_PWD")
-
-            self.es = Elasticsearch(
-                hosts=self.es_server,
-                basic_auth=(self.es_user, self.es_pwd),
-                verify_certs=False,
-                ssl_show_warn=False
-            )
+            elif conn_mode == "HTTP":
+                self.es_user = os.getenv("ELASTIC_USER")
+                self.es_pwd = os.getenv("ELASTIC_PWD")
+                
+                if not all([self.es_user, self.es_pwd]):
+                    raise ValueError("Check ELASTIC_USER and ELASTIC_PWD are in env variables")
+                        
+                self.es = Elasticsearch(
+                    hosts=self.es_server,
+                    basic_auth=(self.es_user, self.es_pwd),  # http_auth has been deprecated
+                    verify_certs=False,
+                    ssl_show_warn=False
+                )
+                
+            else:
+                raise ValueError("Argument conn_mode must be 'HTTP' or 'API'")    
 
     def list_indices(self):
         return self.es.indices.get_alias(index="*")
