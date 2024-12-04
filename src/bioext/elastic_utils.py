@@ -51,8 +51,8 @@ class ElasticsearchSession:
                     ssl_show_warn=False
                 )
                 
-            else:
-                raise ValueError("Argument conn_mode must be 'HTTP' or 'API'")    
+        except:
+            raise ValueError("Argument conn_mode must be 'HTTP' or 'API'")    
 
     def list_indices(self):
         return self.es.indices.get_alias(index="*")
