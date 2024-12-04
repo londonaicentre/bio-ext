@@ -21,9 +21,13 @@ class ElasticsearchSession:
         else:
             self.proxy_node = None
 
-        if conn_mode == "API":
-            self.api_id = os.getenv("ELASTIC_API_ID")
-            self.api_key = os.getenv("ELASTIC_API_KEY")
+        try:
+            if conn_mode == "API":
+                self.api_id = os.getenv("ELASTIC_API_ID")
+                self.api_key = os.getenv("ELASTIC_API_KEY")
+                
+                if not all([self.api_id, self.api_key]):
+                    raise ValueError("Check that ELASTIC_API_ID and ELASTIC_API_KEY are in env variables")
 
             self.es = Elasticsearch(
                 hosts=self.es_server,
