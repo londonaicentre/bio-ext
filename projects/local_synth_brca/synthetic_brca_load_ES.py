@@ -29,13 +29,12 @@ def yield_doc(data_file_path):
     try:
         with open(data_file_path, "r") as file:
             data = json.load(file)
+        for doc in data:
+            print(doc)
+            print("-----")
+            yield doc
     except Exception as e:
         print(f"Failed to load samples: {str(e)}")
-
-    for doc in data:
-        print(doc)
-        print("-----")
-        yield doc
 
 
 def load_docs_from_file(es_client, data_file_path, config):
