@@ -1,8 +1,9 @@
 import argparse
 import json
-import sys
+import os
+from synthetic_brca_load_ES import create_index, load_docs_from_file
+from synthetic_brca_retrieve import retrieve_docs
 from bioext.elastic_utils import ElasticsearchSession
-from synthetic_brca_load_ES import create_index, yield_doc, load_docs_from_file
 from dotenv import load_dotenv
 
 
@@ -40,8 +41,16 @@ def parse_CLI_args():  # -> argparse.Namespace:
         default="data/brca_reports.json",
         help="Path to file to load documents from, expected to be JSON",
     )
+    parser_ESl.set_defaults(subcommand="ES_loads")
 
-    # parser_ESl.set_defaults(which='ES_load')
+    # Parsing command line args for ES_query subcommand
+    parser_ESq = subparsers.add_parser("ES_query", help="help")
+    parser_ESq.add_argument(
+        "output_dir",
+        default="data/breast_brca_status",
+        help="Path to folder to save results into",
+    )
+    parser_ESq.set_defaults(subcommand="ES_query")
 
     args = parser.parse_args()
     return args
@@ -76,8 +85,19 @@ if __name__ == "__main__":
         assert "ElasticSearch" in app_config.keys()
         assert "load" in app_config["ElasticSearch"].keys()
 
-    subcommand = sys.argv[-1]
-    if subcommand == "ES_load":
+    if args.subcommand == "ES_load":
         es_load_cfg = app_config["ElasticSearch"]["load"]
         load_es(es_load_cfg, args.data)
-        print(r"\Ingestion complete")
+        print("Ingestion complete")
+
+    elif args.subcommand == "ES_query":
+        es_query_cfg = app_config["ElasticSearch"]["retrieve"]["breast_brca_query"]
+        os.makedirs(args.output_dir, exist_ok=True)
+
+        # connect and log on to ElasticSearch
+        print("Connecting to ElasticSearch")
+        es_session = ElasticsearchSession()
+
+        # retrieve and save to file the queried documents
+        retrieve_docs(es_session.es, args.output_dir, es_query_cfg)
+        print("Retrieval complete")

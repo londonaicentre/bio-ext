@@ -10,11 +10,15 @@
             }
         },
         "retrieve": {
-            "index_name": "brca_synth",
-            "mappings": {
-                "properties": {
-                    "seed": {"type": "integer"},
-                    "text": {"type": "text"}
+            "breast_brca_query": {
+                "index_name": "brca_synth",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"wildcard": {"text": "*brca*"}},
+                            {"wildcard": {"text": "*breast*"}}
+                        ]
+                    }
                 }
             }
         }
