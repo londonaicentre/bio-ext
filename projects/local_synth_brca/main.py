@@ -3,7 +3,9 @@ import json
 import os
 from synthetic_brca_load_ES import create_index, load_docs_from_file
 from synthetic_brca_retrieve import retrieve_docs
+from synthetic_brca_load_Docc import file2Doc
 from bioext.elastic_utils import ElasticsearchSession
+from bioext.doccano_utils import DoccanoSession
 from dotenv import load_dotenv
 
 
@@ -51,6 +53,16 @@ def parse_CLI_args():  # -> argparse.Namespace:
         help="Path to folder to save results into",
     )
     parser_ESq.set_defaults(subcommand="ES_query")
+
+    # Parsing command line args for Doc_load subcommand
+    parser_ESl = subparsers.add_parser("Doc_load", help="help")
+    parser_ESl.add_argument(
+        "-d",
+        "--data",
+        default="data/brca_reports.json",
+        help="Path to file to load documents from, expected to be JSON",
+    )
+    parser_ESl.set_defaults(subcommand="Doc_load")
 
     args = parser.parse_args()
     return args
@@ -101,3 +113,10 @@ if __name__ == "__main__":
         # retrieve and save to file the queried documents
         retrieve_docs(es_session.es, args.output_dir, es_query_cfg)
         print("Retrieval complete")
+
+    elif args.subcommand == "Doc_load":
+        doc_load_cfg = app_config["Doccano"]["load"]
+        doc_session = DoccanoSession()
+        file2Doc(doc_session, args.data, doc_load_cfg)
+
+        print("Doccano project setup complete")
