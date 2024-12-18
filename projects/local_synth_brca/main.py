@@ -4,6 +4,7 @@ import os
 from synthetic_brca_load_ES import create_index, load_docs_from_file
 from synthetic_brca_retrieve import retrieve_docs
 from synthetic_brca_load_Docc import file2Doc
+from synthetic_brca_stream_Docc import stream_labelled_docs
 from bioext.elastic_utils import ElasticsearchSession
 from bioext.doccano_utils import DoccanoSession
 from dotenv import load_dotenv
@@ -55,14 +56,18 @@ def parse_CLI_args():  # -> argparse.Namespace:
     parser_ESq.set_defaults(subcommand="ES_query")
 
     # Parsing command line args for Doc_load subcommand
-    parser_ESl = subparsers.add_parser("Doc_load", help="help")
-    parser_ESl.add_argument(
+    parser_Dl = subparsers.add_parser("Doc_load", help="help")
+    parser_Dl.add_argument(
         "-d",
         "--data",
         default="data/brca_reports.json",
         help="Path to file to load documents from, expected to be JSON",
     )
-    parser_ESl.set_defaults(subcommand="Doc_load")
+    parser_Dl.set_defaults(subcommand="Doc_load")
+
+    # Parsing command line args for Doc_stream subcommand
+    parser_Ds = subparsers.add_parser("Doc_stream", help="help")
+    parser_Ds.set_defaults(subcommand="Doc_stream")
 
     args = parser.parse_args()
     return args
@@ -120,3 +125,10 @@ if __name__ == "__main__":
         file2Doc(doc_session, args.data, doc_load_cfg)
 
         print("Doccano project setup complete")
+
+    elif args.subcommand == "Doc_stream":
+        doc_stream_cfg = app_config["Doccano"]["retrieve"]
+        doc_session = DoccanoSession()
+        stream_labelled_docs(doc_session, doc_stream_cfg)
+
+        print("Labelled data streaming complete")

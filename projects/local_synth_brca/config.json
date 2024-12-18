@@ -33,6 +33,8 @@
             },
             "LABELS": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"]
         },
-        "retrieve": {}
+        "retrieve": {
+            "PROJECT_ID": 2
+        }
     }
 }
