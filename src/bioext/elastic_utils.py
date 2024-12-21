@@ -1,5 +1,5 @@
 import os
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, helpers
 from elastic_transport import RequestsHttpNode
 import requests
 
@@ -56,3 +56,48 @@ class ElasticsearchSession:
 
     def list_indices(self):
         return self.es.indices.get_alias(index="*")
+
+    def create_index(self, index_name, mappings, settings=None):
+        """Creates an index in Elasticsearch if one isn't already there."""        
+        if settings is None:
+            settings = {"number_of_shards": 1}
+            
+        self.es.indices.create(
+            index=index_name,
+            body={
+                "settings": settings,
+                "mappings": mappings,
+            },
+            ignore=400,
+        )
+
+    def bulk_load_documents(self, index_name, documents, progress_callback=None):
+        """
+        Bulk load documents into Elasticsearch.
+        """
+        def doc_generator():
+            for doc in documents:
+                yield doc
+
+        successes = 0
+        for ok, action in helpers.streaming_bulk(
+            client=self.es,
+            index=index_name,
+            actions=doc_generator(),
+        ):
+            successes += ok
+            if progress_callback:
+                progress_callback(1)
+                
+        return successes
+
+    def retrieve_documents(self, index_name, query, scroll="2m"):
+        """
+        Retrieve documents from Elasticsearch using scroll API
+        """
+        return helpers.scan(
+            client=self.es,
+            query={"query": query},
+            scroll=scroll,
+            index=index_name
+        )

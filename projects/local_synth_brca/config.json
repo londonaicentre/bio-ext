@@ -1,6 +1,6 @@
 {
     "ElasticSearch": {
-        "load": {
+        "brca_load": {
             "index_name": "brca_synth",
             "mappings": {
                 "properties": {
@@ -9,7 +9,7 @@
                 }
             }
         },
-        "retrieve": {
+        "brca_retrieve": {
             "breast_brca_query": {
                 "index_name": "brca_synth",
                 "query": {
@@ -24,7 +24,7 @@
         }
     },
     "Doccano": {
-        "load":{
+        "brca_load":{
             "PROJECT_DETAILS": {
                 "name": "Synthetic BRCA Annotation",
                 "description": "Classification of synthetic BRCA testing reports",
@@ -33,7 +33,7 @@
             },
             "LABELS": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"]
         },
-        "retrieve": {
+        "brca_retrieve": {
             "PROJECT_ID": 2
         }
     }
