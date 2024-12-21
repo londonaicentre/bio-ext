@@ -116,17 +116,20 @@ class ElasticsearchSession:
             index=index_name
         )
     
-    def get_random_doc_ids(self, index_name, size):
+    def get_random_doc_ids(self, index_name, size, query=None):
         """
         Get a random subset of document IDs from a given document index
         """
+        # If no query provided, match all documents
+        if query is None:
+            query = {"match_all": {}}
+            
         # return all document IDs first!
-        query = {
-            "_source": False,  # don't return the document content
-            "query": {"match_all": {}}
-        }
-        all_ids = [doc["_id"] for doc in self.retrieve_documents(index_name, query)]
-        
+        all_ids = [doc["_id"] for doc in self.bulk_retrieve_documents(
+            index_name=index_name,
+            query=query
+        )]
+    
         # random sample
         return random.sample(all_ids, min(size, len(all_ids)))
 

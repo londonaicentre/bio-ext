@@ -11,11 +11,11 @@
         },
         "query__retrieve_breast_brca": {
             "index_name": "brca_synth",
+            "content_field": "text",             
             "query": {
                 "bool": {
                     "must": [
-                        {"wildcard": {"text": "*brca*"}},
-                        {"wildcard": {"text": "*breast*"}}
+                        {"wildcard": {"text": "*brca*"}}
                     ]
                 }
             }
