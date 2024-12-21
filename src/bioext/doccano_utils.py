@@ -66,6 +66,23 @@ class DoccanoSession:
                 text=item['text']
             )
     
+    def load_document(self, text, project_id=None):
+        """
+        Load a single document into specified project
+        """
+        project_id = project_id or self.current_project_id
+        if not project_id:
+            raise ValueError("No project ID specified or available")
+        try:
+            example = self.client.create_example(
+                project_id=project_id,
+                text=text
+            )
+            return example
+        except Exception as e:
+            print(f"Failed to load document: {e}")
+            raise e
+
     def get_labelled_samples(self, project_id=None):
         """
         Streams text and associated labels as generator from specified or active project

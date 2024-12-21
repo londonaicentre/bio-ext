@@ -2,6 +2,7 @@ import os
 from elasticsearch import Elasticsearch, helpers
 from elastic_transport import RequestsHttpNode
 import requests
+import random
 
 # thanks @LAdams for implementing required http proxy
 class GsttProxyNode(RequestsHttpNode):
@@ -57,10 +58,23 @@ class ElasticsearchSession:
     def list_indices(self):
         return self.es.indices.get_alias(index="*")
 
-    def create_index(self, index_name, mappings, settings=None):
-        """Creates an index in Elasticsearch if one isn't already there."""        
+    def create_index(self, index_name, mappings, settings=None, overwrite=False):
+        """
+        Creates an index in Elasticsearch with option to overwrite.
+        Requires a config input (mappings) that describes fields, e.g.:
+            "mappings": {
+                "properties": {
+                    "seed": {"type": "integer"},
+                    "text": {"type": "text"}
+                }
+            }
+        """        
         if settings is None:
             settings = {"number_of_shards": 1}
+
+        if overwrite:
+            # delete index if it exists
+            self.es.indices.delete(index=index_name, ignore=[400, 404])
             
         self.es.indices.create(
             index=index_name,
@@ -91,7 +105,7 @@ class ElasticsearchSession:
                 
         return successes
 
-    def retrieve_documents(self, index_name, query, scroll="2m"):
+    def bulk_retrieve_documents(self, index_name, query, scroll="2m"):
         """
         Retrieve documents from Elasticsearch using scroll API
         """
@@ -101,3 +115,27 @@ class ElasticsearchSession:
             scroll=scroll,
             index=index_name
         )
+    
+    def get_random_doc_ids(self, index_name, size):
+        """
+        Get a random subset of document IDs from a given document index
+        """
+        # return all document IDs first!
+        query = {
+            "_source": False,  # don't return the document content
+            "query": {"match_all": {}}
+        }
+        all_ids = [doc["_id"] for doc in self.retrieve_documents(index_name, query)]
+        
+        # random sample
+        return random.sample(all_ids, min(size, len(all_ids)))
+
+    def get_document_by_id(self, index_name, doc_id):
+        """
+        Retrieve single document based on its ID
+        """
+        try:
+            return self.es.get(index=index_name, id=doc_id)
+        except Exception as e:
+            print(f"Error retrieving document {doc_id}: {e}")
+            return None

@@ -28,7 +28,8 @@ def load_synthetic_data_into_elastic(config, data):
     print("Creating index...")
     es_session.create_index(
         index_name=config["index_name"],
-        mappings=config["mappings"]
+        mappings=config["mappings"],
+        overwrite=True
     )
 
     # load and parse json
@@ -63,6 +64,6 @@ if __name__ == "__main__":
     
     # load config
     with open(args.config) as f:
-        config = json.load(f)["ElasticSearch"]["brca_load"]
+        config = json.load(f)["ElasticSearch"]["create_index__synthetic_brca"]
     
     load_synthetic_data_into_elastic(config, args.data)

@@ -1,6 +1,6 @@
 {
     "ElasticSearch": {
-        "brca_load": {
+        "create_index__synthetic_brca": {
             "index_name": "brca_synth",
             "mappings": {
                 "properties": {
@@ -9,22 +9,20 @@
                 }
             }
         },
-        "brca_retrieve": {
-            "breast_brca_query": {
-                "index_name": "brca_synth",
-                "query": {
-                    "bool": {
-                        "must": [
-                            {"wildcard": {"text": "*brca*"}},
-                            {"wildcard": {"text": "*breast*"}}
-                        ]
-                    }
+        "query__retrieve_breast_brca": {
+            "index_name": "brca_synth",
+            "query": {
+                "bool": {
+                    "must": [
+                        {"wildcard": {"text": "*brca*"}},
+                        {"wildcard": {"text": "*breast*"}}
+                    ]
                 }
             }
         }
     },
     "Doccano": {
-        "brca_load":{
+        "project_setup__synthetic_brca":{
             "PROJECT_DETAILS": {
                 "name": "Synthetic BRCA Annotation",
                 "description": "Classification of synthetic BRCA testing reports",
@@ -33,7 +31,7 @@
             },
             "LABELS": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"]
         },
-        "brca_retrieve": {
+        "project_id__synthetic_brca": {
             "PROJECT_ID": 2
         }
     }
