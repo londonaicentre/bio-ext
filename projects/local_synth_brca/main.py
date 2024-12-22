@@ -1,10 +1,8 @@
 import argparse
 import json
 import os
-from synthetic_brca_load_Docc import file2Doc
-from synthetic_brca_stream_Docc import stream_labelled_docs
 from bioext.elastic_utils import ElasticsearchSession
-from bioext.doccano_utils import DoccanoSession
+from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
 from dotenv import load_dotenv
 
 
@@ -118,7 +116,7 @@ if __name__ == "__main__":
         if args.subcommand == "Doc_load":
             doc_load_cfg = app_config["Doccano"]["load"]
             doc_session = DoccanoSession()
-            file2Doc(doc_session, args.data, doc_load_cfg)
+            load_from_file(doc_session, args.data, doc_load_cfg)
 
             print("Doccano project setup complete")
 
