@@ -31,7 +31,8 @@
                 "project_type": "DocumentClassification",
                 "guideline": "Classify BRCA results under the most appropriate label(s)"
             },
-            "LABELS": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"]
+            "LABELS": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"],
+            "LABEL_TYPE": "category"
         },
         "retrieve": {
             "PROJECT_ID": 2
