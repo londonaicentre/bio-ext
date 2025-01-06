@@ -4,6 +4,7 @@ import json
 from elasticsearch import Elasticsearch, helpers
 from elastic_transport import RequestsHttpNode
 import requests
+import random
 
 
 # thanks @LAdams for implementing required http proxy
@@ -76,14 +77,29 @@ class ElasticsearchSession:
         #     "Could not connect with credentials provided"
         # )
 
-    def create_index(self, config):
-        """Creates an index in ElasticSearch if one isn't already there."""
+    def create_index(self, index_name, mappings, settings=None, overwrite=False):
+        """
+        Creates an index in Elasticsearch with option to overwrite existing one.
+        Requires a config input (mappings) that describes fields, e.g.:
+            "mappings": {
+                "properties": {
+                    "seed": {"type": "integer"},
+                    "text": {"type": "text"}
+                }
+            }
+        """
+        if settings is None:
+            settings = {"number_of_shards": 1}
+
+        if overwrite:
+            # delete index if it exists
+            self.es.indices.delete(index=index_name, ignore=[400, 404])
 
         self.es.indices.create(
-            index=config["index_name"],
+            index=index_name,
             body={
-                "settings": {"number_of_shards": 1},
-                "mappings": config["mappings"],
+                "settings": settings,
+                "mappings": mappings,
             },
             ignore=400,
         )
@@ -104,39 +120,64 @@ class ElasticsearchSession:
         except Exception as e:
             print(f"Failed to load samples: {str(e)}")
 
-    def load_docs_from_file(self, data_file_path, config):
-        progress = tqdm.tqdm(unit=" docs", total=100)
+    def bulk_load_documents(self, index_name, documents, progress_callback=None):
+        """
+        Bulk load documents into Elasticsearch.
+        """
+
+        def doc_generator():
+            for doc in documents:
+                yield doc
+
         successes = 0
         for ok, action in helpers.streaming_bulk(
             client=self.es,
-            index=config["index_name"],
-            actions=self._yield_doc(data_file_path),
+            index=index_name,
+            actions=doc_generator(),
         ):
-            progress.update(1)
             successes += ok
+            if progress_callback:
+                progress_callback(1)
+
         return successes
 
-    def retrieve_docs(self, project_dir, query_cfg):
-        index_name = query_cfg["index_name"]
-        query = {"query": query_cfg["query"]}
-        try:
-            results = helpers.scan(
-                client=self.es, query=query, scroll="2m", index=index_name
+    def bulk_retrieve_documents(self, index_name, query, scroll="2m"):
+        """
+        Retrieve documents from Elasticsearch using scroll API
+        """
+        return helpers.scan(
+            client=self.es,
+            query={"query": query},
+            scroll=scroll,
+            index=index_name,
+        )
+
+    def get_random_doc_ids(self, index_name, size, query=None):
+        """
+        Get a random subset of document IDs from a given document index
+        """
+        # If no query provided, match all documents
+        if query is None:
+            query = {"match_all": {}}
+
+        # return all document IDs first!
+        all_ids = [
+            doc["_id"]
+            for doc in self.bulk_retrieve_documents(
+                index_name=index_name,
+                query=query,
             )
+        ]
 
-            processed_count = 0
-            for hit in results:
-                doc_id = hit["_id"]
-                file_path = os.path.join(project_dir, f"{doc_id}.json")
+        # random sample
+        return random.sample(all_ids, min(size, len(all_ids)))
 
-                with open(file_path, "w") as f:
-                    json.dump(hit, f, indent=2)
-
-                processed_count += 1
-                if processed_count % 1000 == 0:
-                    print(f"Up to {processed_count} docs...")
-
-            print(f"\nTotal: {processed_count} docs")
-
+    def get_document_by_id(self, index_name, doc_id):
+        """
+        Retrieve single document based on its ID
+        """
+        try:
+            return self.es.get(index=index_name, id=doc_id)
         except Exception as e:
-            print(f"Error: {str(e)}")
+            print(f"Error retrieving document {doc_id}: {e}")
+            return None
