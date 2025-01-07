@@ -88,15 +88,24 @@ class DoccanoSession:
 
         return new_labels
 
-    def load_simple_json(self, data: dict, project_id=None):
+    def load_document(self, text, metadata=None, project_id=None):
         """
-        Given json.load data, load in 'text' fields to specified or active project
+        Load a single document into specified project
         """
         project_id = project_id or self.current_project_id
         if not project_id:
             raise ValueError("No project ID specified or available")
-        for item in data:
-            self.client.create_example(project_id=project_id, text=item["text"])
+
+        try:
+            example = self.client.create_example(
+                project_id=project_id,
+                text=text,
+                meta=metadata,
+            )
+            return example
+        except Exception as e:
+            print(f"Failed to load document: {e}")
+            raise e
 
     def get_labelled_samples(self, project_id=None):
         """
@@ -131,6 +140,15 @@ class DoccanoSession:
 
 
 def load_from_file(doc_session, data_file_path, doc_load_cfg):
+    """This is not useful in its current form.
+    Currently uploads one doc from 1 file.
+    May be useful if it bulk uploaded from a folder, where each file is a doc.
+
+    Args:
+        doc_session (_type_): _description_
+        data_file_path (str): path to document file
+        doc_load_cfg (dict): config details
+    """
     # create project
     project = doc_session.create_or_update_project(**doc_load_cfg["PROJECT_DETAILS"])
     # doc_session.update_project()
@@ -147,7 +165,7 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
         with open(data_file_path, "r") as file:
             data = json.load(file)
         # load json to doccano - TODO: avoid uploading duplicates
-        doc_session.load_simple_json(data)
+        doc_session.load_document(data["text"])
         print(f"Uploaded {len(data)} examples")
     except Exception as e:
         print(f"Failed to load samples: {str(e)}")

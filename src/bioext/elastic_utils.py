@@ -1,5 +1,4 @@
 import os
-import tqdm
 import json
 from elasticsearch import Elasticsearch, helpers
 from elastic_transport import RequestsHttpNode
