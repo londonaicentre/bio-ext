@@ -12,6 +12,7 @@
         "retrieve": {
             "breast_brca_query": {
                 "index_name": "brca_synth",
+                "content_field": "text",             
                 "query": {
                     "bool": {
                         "must": [
