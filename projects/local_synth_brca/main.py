@@ -1,4 +1,5 @@
 import argparse
+import tqdm
 import json
 import os
 from bioext.elastic_utils import ElasticsearchSession
@@ -69,14 +70,39 @@ def parse_CLI_args():  # -> argparse.Namespace:
     return args
 
 
-def load_es(es_session, es_load_cfg, data_file_path):
-    print("Creating an index...")
-    es_session.create_index(es_load_cfg)
+def load_es_from_file(es_session, es_load_cfg, data_file_path):
+    """Load synthetic documents into Elasticsearch"""
 
-    # load json to ElasticSearch
+    print("Connecting to ElasticSearch")
+    es_session = ElasticsearchSession()
+
+    print("Creating index...")
+    es_session.create_index(
+        index_name=es_load_cfg["index_name"],
+        mappings=es_load_cfg["mappings"],
+        overwrite=True,
+    )
+
+    # load and parse json
+    try:
+        with open(data_file_path, "r") as file:
+            documents = json.load(file)
+    except Exception as e:
+        print(f"Failed to load samples: {e}")
+        return
+
+    progress = tqdm(unit="docs", total=len(documents))
+
+    # load into index
     print("Indexing documents...")
-    successes = es_session.load_docs_from_file(data_file_path, es_load_cfg)
-    print("Indexed %d/%d documents" % (successes, 100))
+    successes = es_session.bulk_load_documents(
+        index_name=es_load_cfg["index_name"],
+        documents=documents,
+        progress_callback=progress.update,
+    )
+
+    print(f"Indexed {successes}/{len(documents)} documents")
+    return successes
 
 
 if __name__ == "__main__":
@@ -100,7 +126,7 @@ if __name__ == "__main__":
 
         if args.subcommand == "ES_load":
             es_load_cfg = app_config["ElasticSearch"]["load"]
-            load_es(es_session, es_load_cfg, args.data)
+            load_es_from_file(es_session, es_load_cfg, args.data)
             print("Ingestion complete")
 
         elif args.subcommand == "ES_query":
