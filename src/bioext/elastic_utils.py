@@ -140,16 +140,34 @@ class ElasticsearchSession:
 
         return successes
 
-    def bulk_retrieve_documents(self, index_name, query, scroll="2m"):
+    def bulk_retrieve_documents(
+        self, index_name, query, scroll="2m", save_to_file=None
+    ):
         """
         Retrieve documents from Elasticsearch using scroll API
         """
-        return helpers.scan(
+        docs = helpers.scan(
             client=self.es,
             query={"query": query},
             scroll=scroll,
             index=index_name,
         )
+
+        # save queried documents to file
+        if save_to_file is not None:
+            os.makedirs(save_to_file, exist_ok=True)
+            processed_count = 0
+            for hit in docs:
+                doc_id = hit["_id"]
+                file_path = os.path.join(save_to_file, f"{doc_id}.json")
+                with open(file_path, "w") as f:
+                    json.dump(hit, f, indent=2)
+                processed_count += 1
+                if processed_count % 1000 == 0:
+                    print(f"Up to {processed_count} docs...")
+            print(f"{processed_count} docs were downloaded")
+
+        return docs
 
     def get_random_doc_ids(self, index_name, size, query=None):
         """
