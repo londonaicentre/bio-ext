@@ -26,15 +26,13 @@
     },
     "Doccano": {
         "load":{
-            "PROJECT_DETAILS": {
-                "name": "Synthetic BRCA Annotation",
-                "description": "Classification of synthetic BRCA testing reports",
-                "project_type": "DocumentClassification",
-                "guideline": "Classify BRCA results under the most appropriate label(s)"
+            "name": "Synthetic BRCA Annotation",
+            "description": "Classification of synthetic BRCA testing reports",
+            "project_type": "DocumentClassification",
+            "guideline": "Classify BRCA results under the most appropriate label(s)",
+            "labels": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"],
+            "label_type": "category"
             },
-            "LABELS": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"],
-            "LABEL_TYPE": "category"
-        },
         "retrieve": {
             "PROJECT_ID": 2
         }

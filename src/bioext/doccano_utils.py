@@ -40,7 +40,7 @@ class DoccanoSession:
         # Find project ID based on name
         for proj in self.client.list_projects():
             if name == proj.name:
-                project_ids.append((proj.id, proj.tag))
+                project_ids.append((proj.id, proj.tags))
         assert len(project_ids) < 2, "Multiple projects were found with the same name"
 
         # TODO: would you ever want to add more docs to a project that already exists?
@@ -49,7 +49,7 @@ class DoccanoSession:
             # check allow_update tag
             assert (
                 "allow_update" in project_ids[0][1]
-            ), "Project found with matching name is not allowed to be updated"
+            ), f"Project found with matching name and ID {project_ids[0][0]} is not allowed to be updated"
             project = self.client.update_project(
                 project_ids[0][0],
                 name=name,

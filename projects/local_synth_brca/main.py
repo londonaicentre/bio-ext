@@ -138,18 +138,12 @@ def es2doc(config, sample_size=100):
     )
 
     # Load documents into Doccano
-    # 1. create project
-    project = doc_session.create_or_update_project(**doc_load_cfg["PROJECT_DETAILS"])
+    # Create project and create labels
+    project = doc_session.create_or_update_project(**doc_load_cfg)
     # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
-    # 2. set up labels
-    new_labels = doc_session.create_or_update_labels(
-        doc_load_cfg["LABELS"], doc_load_cfg["LABEL_TYPE"]
-    )
-    print(f"Created {new_labels}/{len(doc_load_cfg['LABELS'])} new labels")
-
-    # 3. loading documents
+    # Loading documents
     print(f"Loading {len(random_ids)} documents into Doccano...")
     successful_loads = 0
     failed_loads = 0
