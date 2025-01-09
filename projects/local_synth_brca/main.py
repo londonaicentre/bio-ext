@@ -1,12 +1,9 @@
 import argparse
+import tqdm
 import json
 import os
-from synthetic_brca_load_ES import create_index, load_docs_from_file
-from synthetic_brca_retrieve import retrieve_docs
-from synthetic_brca_load_Docc import file2Doc
-from synthetic_brca_stream_Docc import stream_labelled_docs
 from bioext.elastic_utils import ElasticsearchSession
-from bioext.doccano_utils import DoccanoSession
+from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
 from dotenv import load_dotenv
 
 
@@ -44,7 +41,7 @@ def parse_CLI_args():  # -> argparse.Namespace:
         default="data/brca_reports.json",
         help="Path to file to load documents from, expected to be JSON",
     )
-    parser_ESl.set_defaults(subcommand="ES_loads")
+    parser_ESl.set_defaults(subcommand="ES_load")
 
     # Parsing command line args for ES_query subcommand
     parser_ESq = subparsers.add_parser("ES_query", help="help")
@@ -54,6 +51,15 @@ def parse_CLI_args():  # -> argparse.Namespace:
         help="Path to folder to save results into",
     )
     parser_ESq.set_defaults(subcommand="ES_query")
+
+    # Parsing command line args for ES2Doc subcommand
+    parser_ESDoc = subparsers.add_parser("ES2Doc", help="help")
+    parser_ESDoc.add_argument(
+        "sample_size",
+        default=1000,
+        help="Number of samples to load",
+    )
+    parser_ESDoc.set_defaults(subcommand="ES2Doc")
 
     # Parsing command line args for Doc_load subcommand
     parser_Dl = subparsers.add_parser("Doc_load", help="help")
@@ -73,20 +79,96 @@ def parse_CLI_args():  # -> argparse.Namespace:
     return args
 
 
-def load_es(es_load_cfg, data_file_path):
-    # connect and log on to ElasticSearch
-    print("Connecting to ElasticSearch")
-    es_session = ElasticsearchSession()
+def load_es_from_file(es_session, es_load_cfg, data_file_path):
+    """Load synthetic documents into Elasticsearch"""
 
-    # print(es_load_cfg)
+    print("Creating index...")
+    es_session.create_index(
+        index_name=es_load_cfg["index_name"],
+        mappings=es_load_cfg["mappings"],
+        overwrite=True,
+    )
 
-    print("Creating an index...")
-    create_index(es_session.es, es_load_cfg)
+    # load and parse json
+    try:
+        with open(data_file_path, "r") as file:
+            documents = json.load(file)
+    except Exception as e:
+        print(f"Failed to load samples: {e}")
+        return
 
-    # load json to ElasticSearch
+    progress = tqdm(unit="docs", total=len(documents))
+
+    # load into index
     print("Indexing documents...")
-    successes = load_docs_from_file(es_session.es, data_file_path, es_load_cfg)
-    print("Indexed %d/%d documents" % (successes, 100))
+    successes = es_session.bulk_load_documents(
+        index_name=es_load_cfg["index_name"],
+        documents=documents,
+        progress_callback=progress.update,
+    )
+
+    print(f"Indexed {successes}/{len(documents)} documents")
+    return successes
+
+
+def es2doc(config, sample_size=100):
+    """
+    1. Create a new Doccano project
+    2. Query ElasticSearch for matching documents
+    3. Load random sample into Doccano
+    """
+
+    # connect to Elastic and Doccano
+    es_session = ElasticsearchSession()
+    print(f"Connected to Elastic as user: {es_session.es_user}")
+
+    doc_session = DoccanoSession()
+    print(f"Connected to Doccano as user: {doc_session.username}")
+
+    # retrieve configurations
+    es_query_config = config["ElasticSearch"]["retrieve"]["breast_brca_query"]
+    doc_load_cfg = config["Doccano"]["load"]
+
+    # get random document IDs from Elastic using query
+    print(f"Getting {sample_size} random document IDs using query...")
+    random_ids = es_session.get_random_doc_ids(
+        index_name=es_query_config["index_name"],
+        size=int(sample_size),
+        query=es_query_config["query"],
+    )
+
+    # Load documents into Doccano
+    # Create project and create labels
+    project = doc_session.create_or_update_project(**doc_load_cfg)
+    print(f"Using project: {project.name}, with ID {project.id}")
+
+    # Loading documents
+    print(f"Loading {len(random_ids)} documents into Doccano...")
+    successful_loads = 0
+    failed_loads = 0
+
+    content_field = es_query_config["content_field"]
+
+    for doc_id in random_ids:
+        try:
+            doc = es_session.get_document_by_id(
+                index_name=es_query_config["index_name"], doc_id=doc_id
+            )
+            if doc and content_field in doc["_source"]:
+                text = doc["_source"][content_field]
+                doc_session.load_document(text, metadata={"source_id": doc_id})
+                successful_loads += 1
+            else:
+                failed_loads += 1
+                print(f"Document {doc_id} failed to load...")
+        except Exception as e:
+            failed_loads += 1
+            print(f"Document {doc_id} failed to be retrieved: {e}")
+
+    print(f"Success: {successful_loads}")
+    print(f"Failed: {failed_loads}")
+    print(f"Doccano Project ID: {project.id}")
+    return project.id
 
 
 if __name__ == "__main__":
@@ -102,33 +184,40 @@ if __name__ == "__main__":
         assert "ElasticSearch" in app_config.keys()
         assert "load" in app_config["ElasticSearch"].keys()
 
-    if args.subcommand == "ES_load":
-        es_load_cfg = app_config["ElasticSearch"]["load"]
-        load_es(es_load_cfg, args.data)
-        print("Ingestion complete")
-
-    elif args.subcommand == "ES_query":
-        es_query_cfg = app_config["ElasticSearch"]["retrieve"]["breast_brca_query"]
-        os.makedirs(args.output_dir, exist_ok=True)
-
+    if args.subcommand.startswith("ES"):
+        # Initialise a connection to ES server with env credentials
         # connect and log on to ElasticSearch
         print("Connecting to ElasticSearch")
         es_session = ElasticsearchSession()
 
-        # retrieve and save to file the queried documents
-        retrieve_docs(es_session.es, args.output_dir, es_query_cfg)
-        print("Retrieval complete")
+        if args.subcommand == "ES_load":
+            es_load_cfg = app_config["ElasticSearch"]["load"]
+            load_es_from_file(es_session, es_load_cfg, args.data)
+            print("Ingestion complete")
 
-    elif args.subcommand == "Doc_load":
-        doc_load_cfg = app_config["Doccano"]["load"]
+        elif args.subcommand == "ES_query":
+            es_query_cfg = app_config["ElasticSearch"]["retrieve"]["breast_brca_query"]
+
+            # retrieve documents based on query
+            es_session.bulk_retrieve_documents(
+                es_query_cfg["index_name"],
+                es_query_cfg["query"],
+                save_to_file=args.output_dir,
+            )
+
+        elif args.subcommand == "ES2Doc":
+            es2doc(app_config, args.sample_size)
+
+    elif args.subcommand.startswith("Doc"):
+        # Initialise connection to Doccano
         doc_session = DoccanoSession()
-        file2Doc(doc_session, args.data, doc_load_cfg)
 
-        print("Doccano project setup complete")
+        if args.subcommand == "Doc_load":
+            doc_load_cfg = app_config["Doccano"]["load"]
+            load_from_file(doc_session, args.data, doc_load_cfg)
 
-    elif args.subcommand == "Doc_stream":
-        doc_stream_cfg = app_config["Doccano"]["retrieve"]
-        doc_session = DoccanoSession()
-        stream_labelled_docs(doc_session, doc_stream_cfg)
+        elif args.subcommand == "Doc_stream":
+            doc_stream_cfg = app_config["Doccano"]["retrieve"]
+            stream_labelled_docs(doc_session, doc_stream_cfg)
 
-        print("Labelled data streaming complete")
+            print("Labelled data streaming complete")
