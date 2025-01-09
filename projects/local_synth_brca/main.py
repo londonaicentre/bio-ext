@@ -140,7 +140,6 @@ def es2doc(config, sample_size=100):
     # Load documents into Doccano
     # Create project and create labels
     project = doc_session.create_or_update_project(**doc_load_cfg)
-    # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
     # Loading documents
@@ -157,7 +156,7 @@ def es2doc(config, sample_size=100):
             )
             if doc and content_field in doc["_source"]:
                 text = doc["_source"][content_field]
-                doc_session.load_document(text, metadata={"ES_id": doc_id})
+                doc_session.load_document(text, metadata={"source_id": doc_id})
                 successful_loads += 1
             else:
                 failed_loads += 1
@@ -216,8 +215,6 @@ if __name__ == "__main__":
         if args.subcommand == "Doc_load":
             doc_load_cfg = app_config["Doccano"]["load"]
             load_from_file(doc_session, args.data, doc_load_cfg)
-
-            print("Doccano project setup complete")
 
         elif args.subcommand == "Doc_stream":
             doc_stream_cfg = app_config["Doccano"]["retrieve"]

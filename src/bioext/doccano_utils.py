@@ -143,36 +143,30 @@ class DoccanoSession:
 
 
 def load_from_file(doc_session, data_file_path, doc_load_cfg):
-    """This is not useful in its current form.
-    Currently uploads one doc from 1 file.
-    May be useful if it bulk uploaded from a folder, where each file is a doc.
+    """Bulk upload documents from a folder, where each file is a doc.
 
     Args:
         doc_session (_type_): _description_
-        data_file_path (str): path to document file
+        data_file_path (str): path to folder with document files
         doc_load_cfg (dict): config details
     """
     # create project
-    project = doc_session.create_or_update_project(**doc_load_cfg["PROJECT_DETAILS"])
+    project = doc_session.create_or_update_project(**doc_load_cfg)
     # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
-    # set up labels
-    new_labels = doc_session.create_or_update_labels(
-        doc_load_cfg["LABELS"], doc_load_cfg["LABEL_TYPE"]
-    )
-    print(f"Created {new_labels}/{len(doc_load_cfg['LABELS'])} new labels")
-
     # load json from data file
     try:
-        with open(data_file_path, "r") as file:
-            data = json.load(file)
-        # load json to doccano - TODO: avoid uploading duplicates
-        doc_session.load_document(data["text"])
-        print(f"Uploaded {len(data)} examples")
+        for file in os.listdir(data_file_path):
+            with open(os.path.join(data_file_path, file), "r") as file:
+                data = json.load(file)
+                # load json to doccano - TODO: avoid uploading duplicates
+                doc_session.load_document(
+                    data["_source"]["text"], metadata={"source_id": data["_id"]}
+                )
+        print(f"Uploaded {len(os.listdir(data_file_path))} examples")
     except Exception as e:
         print(f"Failed to load samples: {str(e)}")
-        return
 
 
 def stream_labelled_docs(doc_session, doc_stream_cfg):
