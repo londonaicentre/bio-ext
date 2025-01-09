@@ -86,6 +86,13 @@ class ElasticsearchSession:
                     "text": {"type": "text"}
                 }
             }
+
+        Args:
+            index_name (str): Name of the index to create in ElasticSearch.
+            mappings (dict): Dictionary of the format of documents to be stored.
+            settings (dict): Specify eg number of shards for loading data.
+            overwrite (bool): Whether to allow overwriting of an existing index with the same name.
+
         """
         if settings is None:
             settings = {"number_of_shards": 1}
@@ -104,6 +111,11 @@ class ElasticsearchSession:
         )
 
     def list_indices(self):
+        """List available indeces.
+
+        Returns:
+            list: Index names
+        """
         return self.es.indices.get_alias(index="*")
 
     def _yield_doc(self, data_file_path):
@@ -122,6 +134,14 @@ class ElasticsearchSession:
     def bulk_load_documents(self, index_name, documents, progress_callback=None):
         """
         Bulk load documents into Elasticsearch.
+
+        Args:
+            index_name (str): Name of the index in ElasticSearch.
+            documents (list): List of documents to be stored.
+            progress_callback (__type__):
+
+        Returns:
+            int: number of documents successfully loaded
         """
 
         def doc_generator():
@@ -143,8 +163,16 @@ class ElasticsearchSession:
     def bulk_retrieve_documents(
         self, index_name, query, scroll="2m", save_to_file=None
     ):
-        """
-        Retrieve documents from Elasticsearch using scroll API
+        """Retrieve documents from Elasticsearch using scroll API
+
+        Args:
+            index_name (str): Name of the index in ElasticSearch.
+            query (dict): Query in Lucene.
+            scroll (str): Number of documents to load per 'page'.
+            save_to_file (str, None): Directory path to save retrieve documents to, if provided.
+
+        Returns:
+            list: Iterable of ES documents matching query.
         """
         docs = helpers.scan(
             client=self.es,
@@ -172,6 +200,14 @@ class ElasticsearchSession:
     def get_random_doc_ids(self, index_name, size, query=None):
         """
         Get a random subset of document IDs from a given document index
+
+        Args:
+            index_name (str): Name of the index in ElasticSearch.
+            size (int): List of documents to be stored.
+            query (dict): Query in Lucene, optional.
+
+        Returns:
+            random selection of doc IDs.
         """
         # If no query provided, match all documents
         if query is None:
@@ -190,8 +226,15 @@ class ElasticsearchSession:
         return random.sample(all_ids, min(size, len(all_ids)))
 
     def get_document_by_id(self, index_name, doc_id):
-        """
-        Retrieve single document based on its ID
+        """Retrieve single document based on its ID
+
+        Args:
+            index_name (str): Name of the index in ElasticSearch.
+            doc_id (str): Document ID in ES.
+
+        Returns:
+            Requested document.
+
         """
         try:
             return self.es.get(index=index_name, id=doc_id)

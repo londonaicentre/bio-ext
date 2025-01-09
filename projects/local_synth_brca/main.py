@@ -80,7 +80,17 @@ def parse_CLI_args():  # -> argparse.Namespace:
 
 
 def load_es_from_file(es_session, es_load_cfg, data_file_path):
-    """Load synthetic documents into Elasticsearch"""
+    """Load synthetic documents into Elasticsearch
+
+
+    Args:
+        es_session (_type_): Active ElasticSearch session
+        es_load_cfg (dict): key-value pairs of config for loading data into ES.
+        data_file_path (str): Path to datafile to load samples into ES.
+
+    Returns:
+        int: number of samples successfully loaded
+    """
 
     print("Creating index...")
     es_session.create_index(
@@ -111,11 +121,19 @@ def load_es_from_file(es_session, es_load_cfg, data_file_path):
     return successes
 
 
-def es2doc(config, sample_size=100):
-    """
-    1. Create a new Doccano project
-    2. Query ElasticSearch for matching documents
+def es2doc(config: dict, sample_size=100):
+    """Load random subset of samples queried from ES to Doccano for labelling.
+    1. Query ElasticSearch for matching documents
+    2. Create a new Doccano project
     3. Load random sample into Doccano
+
+
+    Args:
+        config (dict): Configuration of ES query criteria and Doccano project details.
+        sample_size (int, optional): Number of samples to load into Doccano. Defaults to 100.
+
+    Returns:
+        _type_: ID of the created project in Doccano.
     """
 
     # connect to Elastic and Doccano

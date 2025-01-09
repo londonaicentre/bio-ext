@@ -31,8 +31,19 @@ class DoccanoSession:
         labels: None,
         label_type: None,
     ):
-        """
-        Register a new Doccano project
+        """Register a new Doccano project and set up labels
+
+        Args:
+            name (str): Project title.
+            project_type (_type_): Project type.
+            description (str): Description of the project.
+            guideline (None): Optional instructions for annotators.
+            labels (None): List of string specifying terms to annotate with.
+            label_type (None): Type of labels.
+
+
+        Returns:
+            Doccano.Project: A Doccano Project object
         """
 
         project_ids = []
@@ -76,8 +87,11 @@ class DoccanoSession:
             raise e
 
     def create_labels(self, labels: list, label_type: str):
-        """
-        Given list of labels, set up labels for specified or active project
+        """Given list of labels, set up labels for specified or active project
+
+        Args:
+            labels (None): List of string specifying terms to annotate with.
+            label_type (None): Type of labels.
         """
         # Identify project
         if not self.current_project_id:
@@ -89,11 +103,20 @@ class DoccanoSession:
                 project_id=self.current_project_id, type=label_type, text=lab
             )
 
-        return labels
-
     def load_document(self, text, metadata=None, project_id=None):
-        """
-        Load a single document into specified project
+        """Load a single document into specified project
+
+        Args:
+            text (str): document content as text
+            metadata (dict, optional): Key-value pairs of metadata. Defaults to None.
+            project_id (int, optional): ID of the project to load sample into. Defaults to None.
+
+        Raises:
+            ValueError: _description_
+            e: _description_
+
+        Returns:
+            _type_: Doccano.Example
         """
         project_id = project_id or self.current_project_id
         if not project_id:
@@ -113,6 +136,12 @@ class DoccanoSession:
     def get_labelled_samples(self, project_id=None):
         """
         Streams text and associated labels as generator from specified or active project
+
+        Args:
+            project_id (int, optional): ID of the project to load sample into. Defaults to None.
+
+        Returns:
+            tuple: text and label of examples
         """
         project_id = project_id or self.current_project_id
         if not project_id:
@@ -131,11 +160,15 @@ class DoccanoSession:
             ]
             yield example.text, labels
 
-    def _get_label_map(self, project_id):
+    def _get_label_map(self, project_id=None):
         """
         Private method to map readable labels to label ids for specified or active project
         Required by get_labelled_samples
         """
+        project_id = project_id or self.current_project_id
+        if not project_id:
+            raise ValueError("No project ID specified or available")
+
         label_types = self.client.list_label_types(
             project_id=project_id, type="category"
         )
@@ -169,11 +202,17 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
         print(f"Failed to load samples: {str(e)}")
 
 
-def stream_labelled_docs(doc_session, doc_stream_cfg):
+def stream_labelled_docs(doc_session, project_id):
+    """Stream (print to terminal]) documents and their labels
+
+    Args:
+        doc_session (_type_): Doccano Session
+        project_id (int): Doccano Porject ID
+    """
     print(f"Connected to Doccano as user: {doc_session.username}")
 
     # iterator
-    labelled_samples = doc_session.get_labelled_samples(doc_stream_cfg["PROJECT_ID"])
+    labelled_samples = doc_session.get_labelled_samples(project_id)
 
     # print labelled samples
     for i, (text, labels) in enumerate(labelled_samples, 1):
