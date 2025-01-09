@@ -12,6 +12,7 @@ dependencies = [
     "mlflow[extras]",
     "boto3",
     "requests",
+    "python-dotenv",
     "elasticsearch",
     "elasticsearch-dsl",
     "elastic-transport",
