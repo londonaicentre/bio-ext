@@ -1,6 +1,7 @@
 from bioext.elastic_utils import GsttProxyNode, ElasticsearchSession
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 es_session = ElasticsearchSession()
@@ -19,30 +20,27 @@ for index in indices:
 # test search
 query = {
     "size": 500,
-    "query": {
-        "bool": {
-            "must": [
-                {"wildcard": {"document_Content": "*breast*"}}
-            ]
-        }
-    }
+    "query": {"bool": {"must": [{"wildcard": {"document_Content": "*breast*"}}]}},
 }
 
+# Use brca_synth if local, gstt_clinical_geneworks_documents in production
 results = es_session.es.search(index="gstt_clinical_geneworks_documents", body=query)
 
 print("\nSearch Results:")
 print(f"Total: {results['hits']['total']['value']}")
 print(f"Retrieved: {len(results['hits']['hits'])}")
-for hit in results['hits']['hits']:
+for hit in results["hits"]["hits"]:
     print(f"Document ID: {hit['_id']}")
     print(f"Score: {hit['_score']}")
     print(f"Document Name: {hit['_source'].get('document_Name', 'Missing')}")
-    print(f"Content Preview: {hit['_source'].get('document_Content', 'Missing')[:42]}...")
+    print(
+        f"Content Preview: {hit['_source'].get('document_Content', 'Missing')[:42]}..."
+    )
 print("\nRetrieval complete")
 
 # Note that ES results are returned in the following format:
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/search-your-data.html
-# 
+#
 # {
 #   "took": <time in milliseconds>,
 #   "timed_out": <boolean>,
