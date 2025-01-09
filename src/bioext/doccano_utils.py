@@ -22,22 +22,36 @@ class DoccanoSession:
         self.user = client.get_profile()
         return client
 
-    def create_or_update_project(self, name, project_type, description, guideline):
+    def create_or_update_project(
+        self,
+        name,
+        project_type,
+        description,
+        guideline: None,
+        labels: None,
+        label_type: None,
+    ):
         """
         Register a new Doccano project
         """
-        # Find project ID based on name, if exists; select first if multiple
-        project_id = None
+
+        project_ids = []
+
+        # Find project ID based on name
         for proj in self.client.list_projects():
             if name == proj.name:
-                project_id = proj.id
-                break
+                project_ids.append((proj.id, proj.tag))
+        assert len(project_ids) < 2, "Multiple projects were found with the same name"
 
-        # Project is found, update details
-        if project_id is not None:
-            # update
+        # TODO: would you ever want to add more docs to a project that already exists?
+        # Project is found, update details if allowed
+        if len(project_ids) == 1:
+            # check allow_update tag
+            assert (
+                "allow_update" in project_ids[0][1]
+            ), "Project found with matching name is not allowed to be updated"
             project = self.client.update_project(
-                project_id,
+                project_ids[0][0],
                 name=name,
                 project_type=project_type,
                 description=description,
@@ -55,38 +69,27 @@ class DoccanoSession:
                 guideline=guideline,
             )
             self.current_project_id = project.id
+            self.create_labels(labels, label_type)
             return project
         except Exception as e:
             print(f"Failed to create project")
             raise e
 
-    def create_or_update_labels(self, labels, label_type, project_id=None):
+    def create_labels(self, labels: list, label_type: str):
         """
         Given list of labels, set up labels for specified or active project
         """
         # Identify project
-        project_id = project_id or self.current_project_id
-        if not project_id:
+        if not self.current_project_id:
             raise ValueError("No project ID specified or available")
 
-        # Update or create labels for project
-        # List available labels in project
-        existing_labels = [
-            lab.text for lab in self.client.list_label_types(project_id, label_type)
-        ]
-
-        new_labels = 0
-
+        # Create labels for project
         for lab in labels:
-            if lab not in existing_labels:
-                self.client.create_label_type(
-                    project_id=project_id, type=label_type, text=lab
-                )
-                new_labels += 1
-            else:
-                print(f"label {lab} already exists")
+            self.client.create_label_type(
+                project_id=self.current_project_id, type=label_type, text=lab
+            )
 
-        return new_labels
+        return labels
 
     def load_document(self, text, metadata=None, project_id=None):
         """
