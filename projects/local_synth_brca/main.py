@@ -5,7 +5,29 @@ import os
 from bioext.elastic_utils import ElasticsearchSession
 from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
 from dotenv import load_dotenv
+import yaml
 
+yamlprojid_file = "projectid.yaml"
+
+def yamlgen_projid(data):
+    """write a yaml given the data argument
+
+    Args:
+        data (keyvalue pair as python dict): this will be written as yaml output 
+        on root
+    This function check if yaml alraedy exists if exists, nothing will be done.
+    if not, write project id
+    """
+    if os.path.exists(yamlprojid_file):
+        print(f"{yamlprojid_file} already exists; Nothing is done.")
+    else:
+        try:
+            with open(yamlprojid_file,'w') as f:
+                yaml.dump(data,f,sort_keys=False)
+            print(f"{yamlprojid_file} has been written successfully.")
+        except Exception as g:
+            print(f"An error on writing to {yamlprojid_file}: {g}")
+        
 
 def parse_CLI_args():  # -> argparse.Namespace:
     """Parse command line arguments
@@ -116,6 +138,7 @@ def es2doc(config, sample_size=100):
     1. Create a new Doccano project
     2. Query ElasticSearch for matching documents
     3. Load random sample into Doccano
+    4. write a project id as a yaml
     """
 
     # connect to Elastic and Doccano
@@ -167,8 +190,13 @@ def es2doc(config, sample_size=100):
 
     print(f"Success: {successful_loads}")
     print(f"Failed: {failed_loads}")
-    print(f"Doccano Project ID: {project.id}")
-    return project.id
+    
+    temp1 = {
+        "Doccano Project name": {project.name},
+        "Doccano Project ID": {project.id},
+    }
+    yamlgen_projid(temp1)
+    return 
 
 
 if __name__ == "__main__":

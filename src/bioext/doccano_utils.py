@@ -2,6 +2,15 @@ import os
 import json
 from doccano_client import DoccanoClient
 
+# need to import yaml
+# need to then load an existing projectid's file
+# need to persist this projectids
+# need to then cross check project id
+# project id need to be logged with datetime stamp - some sort of metadata
+# it all depends on what sort of usecase. is this gonna be multiple labeller simulatenously
+# working on a project?
+# is it going to depend on project being opened and re-labelled in a slightly different wway?
+
 
 class DoccanoSession:
     def __init__(self, server=None):
