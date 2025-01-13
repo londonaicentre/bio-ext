@@ -1,5 +1,5 @@
 import argparse
-import tqdm
+from tqdm import tqdm
 import json
 import os
 from bioext.elastic_utils import ElasticsearchSession
