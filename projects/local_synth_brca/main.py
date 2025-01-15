@@ -23,7 +23,7 @@ def yamlgen_projid(data):
     else:
         try:
             with open(yamlprojid_file,'w') as f:
-                yaml.dump(data,f,sort_keys=False)
+                yaml.dump(data,f,sort_keys=False, default_flow_style=False)
             print(f"{yamlprojid_file} has been written successfully.")
         except Exception as g:
             print(f"An error on writing to {yamlprojid_file}: {g}")
