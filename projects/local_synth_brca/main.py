@@ -12,11 +12,6 @@ from datetime import datetime, timezone
 
 yaml_output_file = "projectid.yaml"
 
-# generate time 
-now = datetime.now()
-now = now.astimezone()
-formatted_datetime = now.strftime("%d-%m-%Y %H:%M:%S %Z%z")
-
 def write_yaml(data,yaml_output_file):
     """this function check if yaml file alraedy exists, if not will write a yaml file 
     at the destination given by arguments
@@ -144,7 +139,7 @@ def es2doc(config, sample_size=100):
     1. Create a new Doccano project
     2. Query ElasticSearch for matching documents
     3. Load random sample into Doccano
-    4. outputs project variables as a dict
+    4. outputs project variables as a dict after generating timestamp
     """
 
     # connect to Elastic and Doccano
@@ -197,10 +192,15 @@ def es2doc(config, sample_size=100):
     print(f"Success: {successful_loads}")
     print(f"Failed: {failed_loads}")
     
+    # create timestamp
+    
+    # generate time 
+    formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
+
     doccano_proj_details = {
         "Doccano Project name": project.name,
         "Doccano Project ID": project.id,
-        "Project Execution Time": formatted_datetime,
+        "Project creation Time": formatted_datetime,
     }
     return doccano_proj_details
 
@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
         elif args.subcommand == "ES2Doc":
             doccano_details = es2doc(app_config, args.sample_size)
-            write_yaml(doccano_details)
+            write_yaml(doccano_details,yaml_output_file)
 
     elif args.subcommand.startswith("Doc"):
         # Initialise connection to Doccano
