@@ -197,12 +197,12 @@ def es2doc(config, sample_size=100):
     print(f"Success: {successful_loads}")
     print(f"Failed: {failed_loads}")
     
-    temp1 = {
+    doccano_proj_details = {
         "Doccano Project name": project.name,
         "Doccano Project ID": project.id,
         "Project Execution Time": formatted_datetime,
     }
-    return temp1
+    return doccano_proj_details
 
 
 if __name__ == "__main__":
