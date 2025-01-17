@@ -5,7 +5,30 @@ import os
 from bioext.elastic_utils import ElasticsearchSession
 from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
 from dotenv import load_dotenv
+import yaml
+from datetime import datetime, timezone
 
+# this is a name of the file to write capturing Doccano project id and time
+
+yaml_output_file = "projectid.yaml"
+
+def write_yaml(data,yaml_output_file):
+    """this function check if yaml file alraedy exists, if not will write a yaml file 
+    at the destination given by arguments
+    Args:
+        data (dict): variables as dict to write
+        yaml_output_file (str): object to be written.
+    """
+    if os.path.exists(yaml_output_file):
+        print(f"{yaml_output_file} already exists; Nothing is done.")
+    else:
+        try:
+            with open(yaml_output_file,'w') as f:
+                yaml.dump(data,f,sort_keys=False, default_flow_style=False)
+            print(f"{yaml_output_file} has been written successfully.")
+        except Exception as e:
+            print(f"An error on writing to {yaml_output_file}: {e}")
+        
 
 def parse_CLI_args():  # -> argparse.Namespace:
     """Parse command line arguments
@@ -116,6 +139,7 @@ def es2doc(config, sample_size=100):
     1. Create a new Doccano project
     2. Query ElasticSearch for matching documents
     3. Load random sample into Doccano
+    4. outputs project variables as a dict after generating timestamp
     """
 
     # connect to Elastic and Doccano
@@ -167,8 +191,18 @@ def es2doc(config, sample_size=100):
 
     print(f"Success: {successful_loads}")
     print(f"Failed: {failed_loads}")
-    print(f"Doccano Project ID: {project.id}")
-    return project.id
+    
+    # create timestamp
+    
+    # generate time 
+    formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
+
+    doccano_proj_details = {
+        "Doccano Project name": project.name,
+        "Doccano Project ID": project.id,
+        "Project creation Time": formatted_datetime,
+    }
+    return doccano_proj_details
 
 
 if __name__ == "__main__":
@@ -206,7 +240,8 @@ if __name__ == "__main__":
             )
 
         elif args.subcommand == "ES2Doc":
-            es2doc(app_config, args.sample_size)
+            doccano_details = es2doc(app_config, args.sample_size)
+            write_yaml(doccano_details,yaml_output_file)
 
     elif args.subcommand.startswith("Doc"):
         # Initialise connection to Doccano
