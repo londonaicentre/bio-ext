@@ -6,27 +6,33 @@ from bioext.elastic_utils import ElasticsearchSession
 from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
 from dotenv import load_dotenv
 import yaml
+from datetime import datetime, timezone
 
-yamlprojid_file = "projectid.yaml"
+# this is a name of the file to write capturing Doccano project id and time
 
-def yamlgen_projid(data):
-    """write a yaml given the data argument
+yaml_output_file = "projectid.yaml"
 
+# generate time 
+now = datetime.now()
+now = now.astimezone()
+formatted_datetime = now.strftime("%d-%m-%Y %H:%M:%S %Z%z")
+
+def write_yaml(data,yaml_output_file):
+    """this function check if yaml file alraedy exists, if not will write a yaml file 
+    at the destination given by arguments
     Args:
-        data (keyvalue pair as python dict): this will be written as yaml output 
-        on root
-    This function check if yaml alraedy exists if exists, nothing will be done.
-    if not, write project id
+        data (dict): variables as dict to write
+        yaml_output_file (str): object to be written.
     """
-    if os.path.exists(yamlprojid_file):
-        print(f"{yamlprojid_file} already exists; Nothing is done.")
+    if os.path.exists(yaml_output_file):
+        print(f"{yaml_output_file} already exists; Nothing is done.")
     else:
         try:
-            with open(yamlprojid_file,'w') as f:
+            with open(yaml_output_file,'w') as f:
                 yaml.dump(data,f,sort_keys=False, default_flow_style=False)
-            print(f"{yamlprojid_file} has been written successfully.")
-        except Exception as g:
-            print(f"An error on writing to {yamlprojid_file}: {g}")
+            print(f"{yaml_output_file} has been written successfully.")
+        except Exception as e:
+            print(f"An error on writing to {yaml_output_file}: {e}")
         
 
 def parse_CLI_args():  # -> argparse.Namespace:
@@ -138,7 +144,7 @@ def es2doc(config, sample_size=100):
     1. Create a new Doccano project
     2. Query ElasticSearch for matching documents
     3. Load random sample into Doccano
-    4. write a project id as a yaml
+    4. outputs project variables as a dict
     """
 
     # connect to Elastic and Doccano
@@ -192,11 +198,11 @@ def es2doc(config, sample_size=100):
     print(f"Failed: {failed_loads}")
     
     temp1 = {
-        "Doccano Project name": {project.name},
-        "Doccano Project ID": {project.id},
+        "Doccano Project name": project.name,
+        "Doccano Project ID": project.id,
+        "Project Execution Time": formatted_datetime,
     }
-    yamlgen_projid(temp1)
-    return 
+    return temp1
 
 
 if __name__ == "__main__":
@@ -234,7 +240,8 @@ if __name__ == "__main__":
             )
 
         elif args.subcommand == "ES2Doc":
-            es2doc(app_config, args.sample_size)
+            doccano_details = es2doc(app_config, args.sample_size)
+            write_yaml(doccano_details)
 
     elif args.subcommand.startswith("Doc"):
         # Initialise connection to Doccano

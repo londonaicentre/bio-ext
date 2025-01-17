@@ -6,10 +6,8 @@ from doccano_client import DoccanoClient
 # need to then load an existing projectid's file
 # need to persist this projectids
 # need to then cross check project id
-# project id need to be logged with datetime stamp - some sort of metadata
-# it all depends on what sort of usecase. is this gonna be multiple labeller simulatenously
-# working on a project?
-# is it going to depend on project being opened and re-labelled in a slightly different wway?
+# project id need to be logged with datetime stamp - some sort of metadata 
+# using write_yaml func
 
 
 class DoccanoSession:
