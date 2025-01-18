@@ -1,9 +1,95 @@
 services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}
+    container_name: bioextelastic
+    networks:
+      - bioext_network
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ES_PASSWORD}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.license.self_generated.type=basic
+      - xpack.ml.enabled=false
+      - xpack.profiling.enabled=false
+      - xpack.graph.enabled=false
+      - ES_JAVA_OPTS=-Xms${ES_HEAP_INIT} -Xmx${ES_HEAP_MAX}
+      - cluster.routing.allocation.disk.watermark.low=${ES_DISK_SPACE_LOW}
+      - cluster.routing.allocation.disk.watermark.high=${ES_DISK_SPACE_HIGH}
+      - cluster.routing.allocation.disk.watermark.flood_stage=${ES_DISK_SPACE_FLOOD}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --output /dev/null --silent --head --fail -u elastic:${ES_PASSWORD} http://elasticsearch:9200",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  kibana_settings:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}
+    container_name: kibana_settings
+    networks:
+      - bioext_network
+    restart: 'no'
+    command: >
+      bash -c '
+        echo "Setup the kibana_system password";
+        start_time=$(date +%s);
+        timeout=60;
+        until curl -s -u "elastic:${ES_PASSWORD}" -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"'${KIBANA_PASSWORD}'\"}" -H "Content-Type: application/json" | grep -q "^{}"; do if [ $(($(date +%s) - $$start_time)) -ge $$timeout ]; then echo "Error: Elasticsearch timeout"; exit 1; fi; sleep 2; done;
+      '
+
+  kibana:
+    depends_on:
+      kibana_settings:
+        condition: service_completed_successfully
+    image: docker.elastic.co/kibana/kibana:${ES_VERSION}
+    container_name: bioextkibana
+    networks:
+      - bioext_network
+    volumes:
+      - kibana_data:/usr/share/kibana/data
+    ports:
+      - "5601:5601"
+    environment:
+      - SERVER_NAME=kibana
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - ELASTICSEARCH_PUBLICBASEURL=http://localhost:9200
+      - XPACK_ML_ENABLED=false
+      - XPACK_APM_ENABLED=false
+      - TELEMETRY_ENABLED=false
+      - XPACK_REPORTING_ENABLED=false
+      - XPACK_GRAPH_ENABLED=false
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://kibana:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
   doccano:
-    image: doccano/doccano:1.8.4
+    image: doccano/doccano:${DOCCANO_VERSION}
     container_name: bioextdoccano
     networks:
-      - bioext_network    
+      - bioext_network
     ports:
       - "8000:8000"
     volumes:
@@ -19,14 +105,14 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 2G      
+          memory: 2G
     restart: unless-stopped
 
   minio:
     image: minio/minio:RELEASE.2024-09-22T00-33-43Z
     container_name: bioextminio
     networks:
-      - bioext_network    
+      - bioext_network
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -36,18 +122,20 @@ services:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     command: ["server", "/data", "--console-address", ":9001", "--address", ":9000"]
-    deploy: 
+    deploy:
       resources:
         limits:
           cpus: '2'
-          memory: 8G      
+          memory: 8G
     restart: unless-stopped
-    
+
   mlflow:
-    image: drjzhn/mlflow-boto:v2.17.0
+    build:
+      context: ./mlflow-boto-docker
+      dockerfile: Dockerfile
     container_name: bioextmlflow
     networks:
-      - bioext_network    
+      - bioext_network
     ports:
       - "5000:5000"
     volumes:
@@ -61,7 +149,7 @@ services:
       - MLFLOW_LOGGING_LEVEL=DEBUG
       # required to bypass Trust proxies to communicate with Minio
       - no_proxy=bioextminio,localhost,127.0.0.1,.bioext_network
-      - NO_PROXY=bioextminio,localhost,127.0.0.1,.bioext_network      
+      - NO_PROXY=bioextminio,localhost,127.0.0.1,.bioext_network
     command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--artifacts-destination", "s3://mlflow-artifacts", "--serve-artifacts"]
     depends_on:
       - minio
@@ -69,13 +157,15 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 8G            
+          memory: 8G
     restart: unless-stopped
 
 volumes:
   mlflow_data:
   minio_data:
   doccano_data:
+  kibana_data:
+  elasticsearch_data:
 
 networks:
   bioext_network:
