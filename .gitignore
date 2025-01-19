@@ -162,3 +162,4 @@ cython_debug/
 #.idea/
 projects/brca_legacy/data/breast_brca_status/
 projects/local_synth_brca/data/breast_brca_status/
+projects/oncollama
