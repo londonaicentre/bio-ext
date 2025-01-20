@@ -1,0 +1,9 @@
+-e ../../
+mlflow
+transformers
+torch
+torchvision
+huggingface-hub
+python-dotenv
+requests
+accelerate
