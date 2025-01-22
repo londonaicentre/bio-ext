@@ -5,42 +5,6 @@ from doccano_client import DoccanoClient
 from datetime import datetime
 import yaml
 
-
-def save_metadata(filepath):
-    """decorator to save metadata about Doccano project outputs
-    Args:
-        filepath (str): filepath to save and is written at root, argument in 
-        Doccano class
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def inner_decorator(*args,**kwargs):
-            """inner_decorator function takes "filepath", metadata from Doccano project
-            and then generates a timestamp. Then writes as a yaml dump.
-            NOTE: Even if yaml dump is failed, the function should still work
-            Returns:
-                project object created is returned. Metadata is written as yaml.
-            """
-            _project = func(*args,**kwargs)
-            formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
-            metadata = {
-                "Doccano Project name": _project.name,
-                "Doccano Project ID": _project.id,
-                "Project creation time": formatted_datetime
-            }
-            
-            try:
-                with open(filepath, "w") as f:
-                    yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
-                print(f"Metadata of project has been successfully written to {filepath}.")
-            except Exception as e:
-                print(f"An error {e} encountered and metadata is not saved.")
-            
-            finally:
-                return _project 
-        return inner_decorator
-    return decorator
-
 class DoccanoSession:
     def __init__(self, server=None):
         self.username = os.getenv("DOCCANO_USERNAME")
@@ -60,7 +24,27 @@ class DoccanoSession:
         self.user = client.get_profile()
         return client
 
-    @save_metadata(filepath="projectid.yaml")
+    def _save_projectmetadata(self,project,filepath="projectid.yaml"):
+        """this internal method will save project metadata as yaml at project root
+
+        Args:
+            project (object): object which is an output of create_or_update method
+            filepath (str, optional): name and path to save. Defaults to "projectid.yaml".
+        """
+        formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
+        metadata = {
+                "Doccano Project name": project.name,
+                "Doccano Project ID": project.id,
+                "Project creation time": formatted_datetime
+            }
+        
+        try:
+            with open(filepath, "w") as f:
+                yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
+            print(f"Metadata of project has been successfully written to {filepath}.")
+        except (IOError,yaml.YAMLError) as e:
+            print(f"An error {e} encountered and metadata is not saved.")
+    
     def create_or_update_project(
         self,
         name,
@@ -97,6 +81,8 @@ class DoccanoSession:
                 guideline=guideline,
             )
             self.current_project_id = project.id
+            #dump project metadata using internal method
+            self._save_projectmetadata(project,filepath="projectid.yaml")
             return project
 
         # Project is NOT found, create it
@@ -109,6 +95,7 @@ class DoccanoSession:
             )
             self.current_project_id = project.id
             self.create_labels(labels, label_type)
+            self._save_projectmetadata(project,filepath="projectid.yaml")
             return project
         except Exception as e:
             print(f"Failed to create project")
@@ -194,18 +181,16 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
     # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
-    # load json from data file
-    try:
-        for file in os.listdir(data_file_path):
-            with open(os.path.join(data_file_path, file), "r") as file:
-                data = json.load(file)
-                # load json to doccano - TODO: avoid uploading duplicates
-                doc_session.load_document(
-                    data["_source"]["text"], metadata={"source_id": data["_id"]}
-                )
-        print(f"Uploaded {len(os.listdir(data_file_path))} examples")
-    except Exception as e:
-        print(f"Failed to load samples: {str(e)}")
+    # load json from data file 
+    for file in os.listdir(data_file_path):
+        with open(os.path.join(data_file_path, file), "r") as file:
+            data = json.load(file)
+            # load json to doccano - TODO: avoid uploading duplicates
+            doc_session.load_document(
+                data["_source"]["text"], metadata={"source_id": data["_id"]}
+            )
+    print(f"Uploaded {len(os.listdir(data_file_path))} examples")
+    
 
 
 def stream_labelled_docs(doc_session, doc_stream_cfg):
