@@ -1,6 +1,5 @@
 import os
 import json
-import functools
 from doccano_client import DoccanoClient
 from datetime import datetime
 import yaml
