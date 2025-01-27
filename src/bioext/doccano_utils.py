@@ -1,14 +1,8 @@
 import os
 import json
 from doccano_client import DoccanoClient
-
-# need to import yaml
-# need to then load an existing projectid's file
-# need to persist this projectids
-# need to then cross check project id
-# project id need to be logged with datetime stamp - some sort of metadata 
-# using write_yaml func
-
+from datetime import datetime
+import yaml
 
 class DoccanoSession:
     def __init__(self, server=None):
@@ -29,6 +23,27 @@ class DoccanoSession:
         self.user = client.get_profile()
         return client
 
+    def _save_projectmetadata(self,project,filepath="projectid.yaml"):
+        """this internal method will save project metadata as yaml at project root
+
+        Args:
+            project (Doccano project object): object which is an output of create_or_update method
+            filepath (str, optional): name and path to save. Defaults to "projectid.yaml".
+        """
+        formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
+        metadata = {
+                "Doccano Project name": project.name,
+                "Doccano Project ID": project.id,
+                "Project creation time": formatted_datetime
+            }
+        
+        try:
+            with open(filepath, "w") as f:
+                yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
+            print(f"Metadata of project has been successfully written to {filepath}.")
+        except (IOError,yaml.YAMLError) as e:
+            print(f"An error {e} encountered and metadata is not saved.")
+    
     def create_or_update_project(
         self,
         name,
@@ -65,6 +80,8 @@ class DoccanoSession:
                 guideline=guideline,
             )
             self.current_project_id = project.id
+            #dump project metadata using internal method
+            self._save_projectmetadata(project,filepath="projectid.yaml")
             return project
 
         # Project is NOT found, create it
@@ -77,6 +94,7 @@ class DoccanoSession:
             )
             self.current_project_id = project.id
             self.create_labels(labels, label_type)
+            self._save_projectmetadata(project,filepath="projectid.yaml")
             return project
         except Exception as e:
             print(f"Failed to create project")
@@ -162,18 +180,16 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
     # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
-    # load json from data file
-    try:
-        for file in os.listdir(data_file_path):
-            with open(os.path.join(data_file_path, file), "r") as file:
-                data = json.load(file)
-                # load json to doccano - TODO: avoid uploading duplicates
-                doc_session.load_document(
-                    data["_source"]["text"], metadata={"source_id": data["_id"]}
-                )
-        print(f"Uploaded {len(os.listdir(data_file_path))} examples")
-    except Exception as e:
-        print(f"Failed to load samples: {str(e)}")
+    # load json from data file 
+    for file in os.listdir(data_file_path):
+        with open(os.path.join(data_file_path, file), "r") as file:
+            data = json.load(file)
+            # load json to doccano - TODO: avoid uploading duplicates
+            doc_session.load_document(
+                data["_source"]["text"], metadata={"source_id": data["_id"]}
+            )
+    print(f"Uploaded {len(os.listdir(data_file_path))} examples")
+    
 
 
 def stream_labelled_docs(doc_session, doc_stream_cfg):
