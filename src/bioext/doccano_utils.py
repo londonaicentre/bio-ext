@@ -27,7 +27,7 @@ class DoccanoSession:
         """this internal method will save project metadata as yaml at project root
 
         Args:
-            project (object): object which is an output of create_or_update method
+            project (Doccano project object): object which is an output of create_or_update method
             filepath (str, optional): name and path to save. Defaults to "projectid.yaml".
         """
         formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")

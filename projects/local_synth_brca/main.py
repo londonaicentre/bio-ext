@@ -204,7 +204,7 @@ if __name__ == "__main__":
             )
 
         elif args.subcommand == "ES2Doc":
-            doccano_details = es2doc(app_config, args.sample_size)
+            es2doc(app_config, args.sample_size)
 
     elif args.subcommand.startswith("Doc"):
         # Initialise connection to Doccano
