@@ -129,6 +129,25 @@ services:
           memory: 8G
     restart: unless-stopped
 
+  minio_init:
+    image: minio/mc
+    container_name: bioextminio_init
+    networks:
+      - bioext_network
+    depends_on:
+      - minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add bioextminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
+      /usr/bin/mc mb bioextminio/mlflow-artifacts --ignore-existing &&
+      /usr/bin/mc policy set download bioextminio/mlflow-artifacts &&
+      exit 0;
+      "
+    restart: 'no'
+
   mlflow:
     build:
       context: ./mlflow-boto-docker
@@ -154,6 +173,7 @@ services:
     command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--artifacts-destination", "s3://mlflow-artifacts", "--serve-artifacts", "--gunicorn-opts", "--timeout 3600 --workers 4 --threads 8 --worker-class gthread --worker-connections 1000"]
     depends_on:
       - minio
+      - minio_init
     deploy:
       resources:
         limits:
