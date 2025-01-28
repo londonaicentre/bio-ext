@@ -1,6 +1,7 @@
 -e ../../
 mlflow
 transformers
+datasets
 torch
 torchvision
 huggingface-hub
