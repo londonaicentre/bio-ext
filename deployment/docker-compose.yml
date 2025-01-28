@@ -127,6 +127,11 @@ services:
         limits:
           cpus: '2'
           memory: 8G
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
     restart: unless-stopped
 
   minio_init:
@@ -141,11 +146,10 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc config host add bioextminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} &&
-      /usr/bin/mc mb bioextminio/mlflow-artifacts --ignore-existing &&
-      /usr/bin/mc policy set download bioextminio/mlflow-artifacts &&
-      exit 0;
-      "
+      /usr/bin/mc config host add bioextminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}
+      /usr/bin/mc mb bioextminio/mlflow-artifacts --ignore-existing
+      /usr/bin/mc policy set download bioextminio/mlflow-artifacts
+      exit 0;"
     restart: 'no'
 
   mlflow:
@@ -163,14 +167,14 @@ services:
       - MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}
       - MLFLOW_S3_IGNORE_TLS=true
       - AWS_DEFAULT_REGION=minio
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
       - MLFLOW_LOGGING_LEVEL=DEBUG
       - MLFLOW_ENABLE_ARTIFACTS_PROGRESS_BAR=true
       # required to bypass Trust proxies to communicate with Minio
       - no_proxy=bioextminio,localhost,127.0.0.1,.bioext_network
       - NO_PROXY=bioextminio,localhost,127.0.0.1,.bioext_network
-    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--artifacts-destination", "s3://mlflow-artifacts", "--serve-artifacts", "--gunicorn-opts", "--timeout 3600 --workers 4 --threads 8 --worker-class gthread --worker-connections 1000"]
+    command: ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "sqlite:///mlflow/data/mlflow.db", "--default-artifact-root", "s3://mlflow-artifacts", "--serve-artifacts", "--gunicorn-opts", "--timeout 3600 --workers 4 --threads 8 --worker-class gthread --worker-connections 1000"]
     depends_on:
       - minio
       - minio_init
