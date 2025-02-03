@@ -1,0 +1,1 @@
+# Example BERT model training on BRCA synth data as a MULTI CLASS SINGLE LABEL task
