@@ -10,6 +10,7 @@ services:
       - "9200:9200"
     environment:
       - discovery.type=single-node
+      - ELASTIC_USERNAME=${ES_USERNAME}
       - ELASTIC_PASSWORD=${ES_PASSWORD}
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=false
@@ -29,7 +30,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl --output /dev/null --silent --head --fail -u elastic:${ES_PASSWORD} http://elasticsearch:9200",
+          "curl --output /dev/null --silent --head --fail -u ${ES_USERNAME}:${ES_PASSWORD} http://elasticsearch:9200",
         ]
       interval: 5s
       timeout: 5s
@@ -49,7 +50,7 @@ services:
         echo "Setup the kibana_system password";
         start_time=$(date +%s);
         timeout=60;
-        until curl -s -u "elastic:${ES_PASSWORD}" -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"'${KIBANA_PASSWORD}'\"}" -H "Content-Type: application/json" | grep -q "^{}"; do if [ $(($(date +%s) - $$start_time)) -ge $$timeout ]; then echo "Error: Elasticsearch timeout"; exit 1; fi; sleep 2; done;
+        until curl -s -u "${ES_USERNAME}:${ES_PASSWORD}" -X POST http://elasticsearch:9200/_security/user/kibana_system/_password -d "{\"password\":\"'${KIBANA_PASSWORD}'\"}" -H "Content-Type: application/json" | grep -q "^{}"; do if [ $(($(date +%s) - $$start_time)) -ge $$timeout ]; then echo "Error: Elasticsearch timeout"; exit 1; fi; sleep 2; done;
       '
 
   kibana:
@@ -109,7 +110,7 @@ services:
     restart: unless-stopped
 
   minio:
-    image: minio/minio:RELEASE.2024-09-22T00-33-43Z
+    image: minio/minio:${MINIO_VERSION}
     container_name: bioextminio
     networks:
       - bioext_network
