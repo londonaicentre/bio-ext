@@ -54,26 +54,18 @@ As well as other packages, this must contain `-e ../../` to install bioext as an
 
 (1) In `/deployment/`, create a copy of `.env.example` as `.env` and configure variables prior to docker-compose.
 
-(2) From `/deployment/`, run:
+(2) Pull in the mlflow-boto-docker Dockerfile by running `git submodule update --init.
+
+(3) From `/deployment/`, run:
 ```
 docker-compose up -d
 ```
 
-(3) Check that services are running on:
+(4) Check that services are running on:
 ```
 Doccano: http://localhost:8000
 MLFlow: http://localhost:5000
 Minio: http://localhost:9001
-```
-
-(4) Log into the Minio UI, set up a new bucket called mlflow-artifacts
-
-(5) Log into the Minio UI, set up a new Access Key / Secret, and enter it into the local .env file
-
-(6) Run:
-```
-docker-compose down
-docker-compose up -d
 ```
 
 ### Environment variables for projects
