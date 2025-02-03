@@ -3,8 +3,14 @@ from tqdm import tqdm
 import json
 import os
 from bioext.elastic_utils import ElasticsearchSession
-from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
+from bioext.doccano_utils import (
+    DoccanoSession,
+    load_from_file,
+    stream_labelled_docs,
+    save_labelled_docs,
+)
 from dotenv import load_dotenv
+
 
 def parse_CLI_args():  # -> argparse.Namespace:
     """Parse command line arguments
@@ -73,6 +79,16 @@ def parse_CLI_args():  # -> argparse.Namespace:
     # Parsing command line args for Doc_stream subcommand
     parser_Ds = subparsers.add_parser("Doc_stream", help="help")
     parser_Ds.set_defaults(subcommand="Doc_stream")
+
+    # Parsing command line args for Doc_save subcommand
+    parser_Dsa = subparsers.add_parser("Doc_save", help="help")
+    parser_Dsa.add_argument(
+        "--output_file",
+        default="data/breast_brca_labelled.json",
+        help="Path to folder to save results into",
+        required=False,
+    )
+    parser_Dsa.set_defaults(subcommand="Doc_save")
 
     args = parser.parse_args()
     return args
@@ -181,6 +197,8 @@ if __name__ == "__main__":
         app_config = json.load(json_data)
         assert "ElasticSearch" in app_config.keys()
         assert "load" in app_config["ElasticSearch"].keys()
+        assert "Doccano" in app_config.keys()
+        assert "load" in app_config["Doccano"].keys()
 
     if args.subcommand.startswith("ES"):
         # Initialise a connection to ES server with env credentials
@@ -219,3 +237,12 @@ if __name__ == "__main__":
             stream_labelled_docs(doc_session, doc_stream_cfg)
 
             print("Labelled data streaming complete")
+
+        elif args.subcommand == "Doc_save":
+            print(args.output_file)
+            with open("Doccano_project.json") as f:
+                doc_metadata = json.load(f)
+            project_id = doc_metadata["Project ID"]
+            save_labelled_docs(doc_session, project_id, args.output_file)
+
+            print("Labelled data saved to file.")

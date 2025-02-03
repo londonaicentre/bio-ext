@@ -2,7 +2,7 @@ import os
 import json
 from doccano_client import DoccanoClient
 from datetime import datetime
-import yaml
+
 
 class DoccanoSession:
     def __init__(self, server=None):
@@ -23,27 +23,6 @@ class DoccanoSession:
         self.user = client.get_profile()
         return client
 
-    def _save_projectmetadata(self,project,filepath="projectid.yaml"):
-        """this internal method will save project metadata as yaml at project root
-
-        Args:
-            project (Doccano project object): object which is an output of create_or_update method
-            filepath (str, optional): name and path to save. Defaults to "projectid.yaml".
-        """
-        formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
-        metadata = {
-                "Doccano Project name": project.name,
-                "Doccano Project ID": project.id,
-                "Project creation time": formatted_datetime
-            }
-        
-        try:
-            with open(filepath, "w") as f:
-                yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
-            print(f"Metadata of project has been successfully written to {filepath}.")
-        except (IOError,yaml.YAMLError) as e:
-            print(f"An error {e} encountered and metadata is not saved.")
-    
     def create_or_update_project(
         self,
         name,
@@ -80,8 +59,8 @@ class DoccanoSession:
                 guideline=guideline,
             )
             self.current_project_id = project.id
-            #dump project metadata using internal method
-            self._save_projectmetadata(project,filepath="projectid.yaml")
+            # dump project metadata using internal method
+            self._save_projectmetadata(project)
             return project
 
         # Project is NOT found, create it
@@ -94,7 +73,7 @@ class DoccanoSession:
             )
             self.current_project_id = project.id
             self.create_labels(labels, label_type)
-            self._save_projectmetadata(project,filepath="projectid.yaml")
+            self._save_projectmetadata(project)
             return project
         except Exception as e:
             print(f"Failed to create project")
@@ -166,6 +145,26 @@ class DoccanoSession:
         )
         return {label_type.id: label_type.text for label_type in label_types}
 
+    def _save_projectmetadata(self, project, filepath="Doccano_project.json"):
+        """this internal method will save project metadata as yaml at project root
+
+        Args:
+            project (Doccano project object): object which is an output of create_or_update method
+            filepath (str, optional): name and path to save. Defaults to "Doccano_project.json".
+        """
+        formatted_datetime = (
+            datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
+        )
+        metadata = {
+            "Project name": project.name,
+            "Project ID": project.id,
+            "Project creation time": formatted_datetime,
+        }
+
+        with open(filepath, "w") as f:
+            json.dump(metadata, f)
+        print(f"Metadata of project has been successfully written to {filepath}.")
+
 
 def load_from_file(doc_session, data_file_path, doc_load_cfg):
     """Bulk upload documents from a folder, where each file is a doc.
@@ -180,7 +179,7 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
     # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
-    # load json from data file 
+    # load json from data file
     for file in os.listdir(data_file_path):
         with open(os.path.join(data_file_path, file), "r") as file:
             data = json.load(file)
@@ -189,7 +188,6 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
                 data["_source"]["text"], metadata={"source_id": data["_id"]}
             )
     print(f"Uploaded {len(os.listdir(data_file_path))} examples")
-    
 
 
 def stream_labelled_docs(doc_session, doc_stream_cfg):
@@ -203,3 +201,20 @@ def stream_labelled_docs(doc_session, doc_stream_cfg):
         print(f"\nSample {i}:")
         print(f"Text: {text[:50]}...")
         print(f"Labels: {labels}")
+
+
+def save_labelled_docs(doc_session, project_id, file_path):
+    print(f"Connected to Doccano as user: {doc_session.username}")
+
+    # iterator
+    labelled_samples = doc_session.get_labelled_samples(project_id)
+
+    # add labelled samples to list
+    data = []
+    for i, (text, labels) in enumerate(labelled_samples, 1):
+        # Need to use label encoding to make labels ints (0/1 for binary class)
+        data.append({"text": text, "label": ",".join(labels)})
+
+    # save labelled samples to file
+    with open(file_path, "w") as f:
+        json.dump(data, f)

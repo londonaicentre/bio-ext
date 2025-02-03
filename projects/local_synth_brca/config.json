@@ -4,20 +4,32 @@
             "index_name": "brca_synth",
             "mappings": {
                 "properties": {
-                    "seed": {"type": "integer"},
-                    "text": {"type": "text"}
+                    "seed": {
+                        "type": "integer"
+                    },
+                    "text": {
+                        "type": "text"
+                    }
                 }
             }
         },
         "retrieve": {
             "breast_brca_query": {
                 "index_name": "brca_synth",
-                "content_field": "text",             
+                "content_field": "text",
                 "query": {
                     "bool": {
                         "must": [
-                            {"wildcard": {"text": "*brca*"}},
-                            {"wildcard": {"text": "*breast*"}}
+                            {
+                                "wildcard": {
+                                    "text": "*brca*"
+                                }
+                            },
+                            {
+                                "wildcard": {
+                                    "text": "*breast*"
+                                }
+                            }
                         ]
                     }
                 }
@@ -25,14 +37,20 @@
         }
     },
     "Doccano": {
-        "load":{
+        "load": {
             "name": "Synthetic BRCA Annotation",
             "description": "Classification of synthetic BRCA testing reports",
             "project_type": "DocumentClassification",
             "guideline": "Classify BRCA results under the most appropriate label(s)",
-            "labels": ["BRCA1 positive", "BRCA2 positive", "BRCA1 VUS", "BRCA2 VUS", "Invalid"],
+            "labels": [
+                "BRCA1 positive",
+                "BRCA2 positive",
+                "BRCA1 VUS",
+                "BRCA2 VUS",
+                "Invalid"
+            ],
             "label_type": "category"
-            },
+        },
         "retrieve": {
             "PROJECT_ID": 2
         }
