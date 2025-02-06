@@ -115,13 +115,12 @@ services:
     networks:
       - bioext_network    
     volumes:
-      # - ./configs:/home/configs
+      - ./medcattrainer/configs:/home/configs
       - mct-api-media:/home/api/media
       - mct-api-static:/home/api/static
       - mct-api-db:/home/api/db
     env_file:
       - ./.env.example
-      - ./medcattrainer/.env.example
     environment:
       - MCT_VERSION=v2.18.1
     # ports:
@@ -138,13 +137,12 @@ services:
     networks:
       - bioext_network 
     volumes:
-      # - ./configs:/home/configs
+      - ./medcattrainer/configs:/home/configs
       - mct-api-media:/home/api/media
       - mct-api-static:/home/api/static
       - mct-api-db:/home/api/db
     env_file:
       - ./.env.example
-      - ./medcattrainer/.env.example
     command: /home/scripts/run-bg-process.sh
     restart: unless-stopped
   
@@ -160,7 +158,6 @@ services:
       - ./medcattrainer/nginx/sites-enabled/:/etc/nginx/sites-enabled
     env_file:
       - ./.env.example
-      - ./medcattrainer/.env.example  
     ports:
       - "${MCTRAINER_PORT:-8001}:8000"
     restart: unless-stopped
@@ -173,7 +170,6 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env.example
-      - ./medcattrainer/.env.example
     expose:
       - "8983"
     # ports:
