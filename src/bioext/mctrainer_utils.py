@@ -8,8 +8,6 @@ import requests
 
 import logging
 
-from requests.exceptions import HTTPError
-
 logger = logging.getLogger(__name__)
 
 
@@ -379,7 +377,7 @@ if __name__ == '__main__':
     
     cdb = cdbs[0]
     vocab = vocabs[0]
-    cuis_file = '/Users/tom/phd/cattrainer_models/cuis.json'
+    cuis_file = '<cuis.json>' # path to a JSON formatted Array of strings for a cui filter e.g. ['C0000001', 'C0000002', 'C0000003' ... ]
     # with client wrapper objects
     # p = session.create_project(name='test-upload', description='test-upload', cuis=['C0000001'], members=[users[0]], dataset=datasets[0], concept_db=cdb, vocab=vocab, cdb_search_filter=cdb)
     
