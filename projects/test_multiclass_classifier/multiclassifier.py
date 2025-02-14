@@ -9,14 +9,25 @@ from transformers import (
     Trainer,
 )
 from torch import cuda
+from sklearn.metrics import (
+    accuracy_score,
+    precision_recall_fscore_support,
+    confusion_matrix,
+    classification_report,
+)
 
 import mlflow
 from mlflow.models import infer_signature
 
-device = "cuda" if cuda.is_available() else "cpu"
 # TODO: refactor from pandas to hugginface datasets
 # TODO: Consider class weighted splitting
+# TODO: tidy up re: infer signature handlign missing data
+# TODO: tidy up MPS / CUDA etc
 
+# Declare device
+# device = "cuda" if cuda.is_available() else "cpu"
+
+# Declare constants TODO: should refactor in config file
 DATA_PATH = "data/breast_brca_labelled.json"
 FRAC = 1
 RANDOM_STATE = 42
@@ -24,6 +35,7 @@ TRAIN_TEST_SPLITPERC = 0.8
 CHOSEN_MODEL = "bert-base-uncased"
 BATCH_SIZE = 8
 SAVELOCATION = "mclassout"
+
 
 # sense check NEED TO GO TO MLFLOW
 # df["label"].value_counts()
@@ -90,26 +102,37 @@ def prepare_model_and_tokeniser(model_name, numberoflabels, l2i, i2l):
     return tokenizer, model
 
 
-def tokenize_ds(ds, tokenizer):
-    def tokenize_encode(examples):
-        return tokenizer(
-            examples["text"],
-            truncation=True,
-            padding="max_length",
-            max_length=512,
-            return_tensors="pt",
-        )
-
-    ds_enc = ds.map(tokenize_encode, batched=True, remove_columns=["category", "text"])
-    return ds_enc
+def tokenize_encode(examples, tokenizer):
+    return tokenizer(
+        examples["text"],
+        truncation=True,
+        padding="max_length",
+        max_length=512,
+        return_tensors="pt",
+    )
 
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     predictions = torch.argmax(torch.from_numpy(predictions), dim=-1)
     labels = torch.from_numpy(labels)
-    accuracy = (predictions == labels).float().mean().item()
-    return {"accuracy": accuracy}
+    accuracy = accuracy_score(labels, predictions)
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels, predictions, average="weighted", zero_division=0
+    )
+    macro_precision, macro_recall, macro_f1, _ = precision_recall_fscore_support(
+        labels, predictions, average="macro", zero_division=0
+    )
+
+    return {
+        "accuracy": accuracy,
+        "weighted_precision": precision,
+        "weighted_recall": recall,
+        "weighted_f1": f1,
+        "macro_precision": macro_precision,
+        "macro_recall": macro_recall,
+        "macro_f1": macro_f1,
+    }
 
 
 def train_model(
@@ -128,7 +151,6 @@ def train_model(
         num_train_epochs=3,
         weight_decay=0.01,
         use_cpu=True,
-        no_cuda=True,
     )
 
     trainer = Trainer(
@@ -167,14 +189,36 @@ def main():
             l2i=label2id,
             i2l=id2label,
         )
-        ds_enc = tokenize_ds(ds=ds, tokenizer=tokenizer)
-
+        ds_enc = ds.map(
+            tokenize_encode,
+            fn_kwargs={"tokenizer": tokenizer},  # NOTE this!
+            batched=True,
+            remove_columns=["category", "text"],
+        )
         trainer = train_model(
             model=model,
             training_dataset=ds_enc["train"],
             evaluation_dataset=ds_enc["validation"],
             metrics=compute_metrics,
         )
+
+        print("Prepare sample")
+        sample_input = ds_enc["train"][0]
+
+        # Log model
+        print("Log training parameters")
+        mlflow.transformers.log_model(
+            transformers_model={
+                "model": model,
+                "tokenizer": tokenizer,
+            },
+            artifact_path="bert_model",
+            task="text-classification",  # NOTE:DO not change this!
+            # signature=infer_signature(sample_input),
+        )
+        trainer.model = trainer.model.cpu()
+
+        # model.to(torch.device("mps"))
 
         trainermetrics = trainer.evaluate()
         mlflow.log_metrics(trainermetrics)
