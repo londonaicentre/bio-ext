@@ -3,11 +3,12 @@
 
 ## Structure
 
+```
 |jak2/
 |--data/
 |--scriptname.py
 |--pipeline.qmd
-
+```
 
 Data will live in data folder
 Crurently only a `.csv`
@@ -26,3 +27,6 @@ Here all the code related to this project will live.
 ## Code
 
 script.py will clean the data extracted from cogstack in the end user desired format.
+
+## TODO 
+will need a requirements.txt
