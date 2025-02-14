@@ -1,0 +1,154 @@
+---
+title: "JAK2_test"
+author: "EJ"
+date: "2025-02-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r }
+library(dplyr)
+library(tidyverse)
+library(magrittr)
+library(lubridate)
+
+
+epr <- read.csv('/Users/emilyjin/Desktop/JAK2/EPR_lab (2).csv')
+epic <- read.csv("/Users/emilyjin/Desktop/JAK2/EPIC_lab.csv")
+
+epic$jak2 <- str_extract(epic$document_Fields, "(?<=valueNum': )[\\d.]+")
+
+epic %>% 
+  group_by(jak2) %>% 
+  summarise(n()) #539 zero results 
+
+epic %<>%
+  filter(jak2 != "0.0")
+
+epic$jak2_date <- str_extract(epic$document_Fields, "(?<=collectionDate': ')[^']+")
+epic$jak2_date <- str_remove(epic$jak2_date, "T.*$")
+
+epic %<>% 
+  arrange(patient_NhsNumber)
+
+epic %<>%
+  select(-c(X_index, X_id, X_score))
+
+epic_two <- epic %>% 
+  group_by(patient_FirstName, patient_LastName, patient_DateOfBirth) %>% 
+  filter(n() >=2) %>% 
+  ungroup()
+
+
+# test <- epic_two %>%
+#   group_by(patient_FirstName, patient_LastName, patient_DateOfBirth) %>%
+#   # Arrange by date within each group
+#   arrange(jak2_date, .by_group = TRUE) %>%
+#   # Calculate time difference with previous row in same group
+#   mutate(months_diff = interval(lag(jak2_date), jak2_date) %/% months(1)) %>%
+#   # Keep groups that have at least one pair 6+ months apart
+#   filter(any(months_diff >= 5, na.rm = TRUE)) %>%
+#   ungroup().  #~15 patients identified to fulfil criteria
+
+
+```
+
+```{r}
+epr %<>% 
+  select(patient_NhsNumber, patient_HospitalNumber_GSTT,document_Fields, patient_FirstName, patient_LastName, patient_Gender, patient_DateOfBirth,  patient_Age, patient_Ethnicity)
+
+epr %<>%
+  rename(patient_HospitalNumber = patient_HospitalNumber_GSTT)
+
+# epr %<>%
+#   mutate(
+#     jak2 = case_when(
+#       str_detect(document_Fields, "V617F%") ~ str_extract(document_Fields, "(?<=V617F% = )[\\d.]+"),
+#       TRUE ~ "Not Available"
+#     )
+#   )
+
+epr %<>%
+  mutate(
+    jak2 = case_when(
+      str_detect(document_Fields, "V617F%") ~ str_extract(document_Fields, "V617F% =\\s*([\\d.]+)"),
+      TRUE ~ "Not Available"
+    )
+  )
+
+epr$jak2 <- sub(".*= *([0-9.]+).*", "\\1", epr$jak2)
+
+epr %>% 
+  group_by(jak2) %>% 
+  summarise(n()) #294
+
+epr_fil <- epr %>% 
+  filter(jak2 != "Not Available")
+
+epr_fil %<>% group_by(patient_FirstName, patient_LastName, patient_DateOfBirth) %>% filter(n() >=2) %>% ungroup()
+epr_fil %<>% arrange(patient_FirstName, patient_LastName, patient_DateOfBirth) 
+
+epr_fil$jak2_date <- str_extract(epr_fil$document_Fields, "(?<=enteredDate': ')[^']+")
+epr_fil$jak2_date <- str_remove(epr_fil$jak2_date, "T.*$")
+
+# test2 <- epr_fil %>%
+#   group_by(patient_FirstName, patient_LastName, patient_DateOfBirth) %>%
+#   # Arrange by date within each group
+#   arrange(jak2_date, .by_group = TRUE) %>%
+#   # Calculate time difference with previous row in same group
+#   mutate(months_diff = interval(lag(jak2_date), jak2_date) %/% months(1)) %>%
+#   # Keep groups that have at least one pair 6+ months apart
+#   filter(any(months_diff >= 5, na.rm = TRUE)) %>%
+#   ungroup()  #~15 patients identified to fulfil criteria. #16 unique pts
+
+
+```
+
+```{r}
+epic$source <- "epic"
+epr_fil$source <- "epr"
+merged <- rbind(epic, epr_fil)
+
+merged$jak2 <- sub("\\.$", "", merged$jak2)
+
+merged_fil <- merged %>%
+  group_by(patient_NhsNumber) %>%
+  # Arrange by date within each group
+  arrange(jak2_date, .by_group = TRUE) %>%
+  # Calculate time difference with previous row in same group
+  mutate(months_diff = interval(min(jak2_date), max(jak2_date)) %/% months(1)) %>%
+  # Keep groups that have at least one pair 6+ months apart
+  filter(any(months_diff >= 5, na.rm = TRUE)) %>%
+  ungroup()
+
+
+```
+
+```{r}
+teddy <- read_csv("/Users/emilyjin/Desktop/JAK2/output/clean_jak2_patientlist.csv")
+teddy %<>% 
+  filter(jak2value_raw != "None")
+
+teddy %>% 
+  group_by(nhsnumber) %>% 
+  summarise(n())
+
+merged_fil[!merged_fil$patient_NhsNumber %in% teddy$nhsnumber,]
+
+teddy[!teddy$nhsnumber %in% merged_fil$patient_NhsNumber,]
+
+merged[!merged$patient_NhsNumber %in% teddy$nhsnumber,]
+
+```
+
+```{r}
+setwd("~/Desktop/JAK2/output")
+write_csv(merged, "EJ_merged_jak2.csv")
+write_csv(merged_fil, "EJ_filtered_jak2.csv")
+
+```
