@@ -1,0 +1,143 @@
+---
+title: "JAK2 methodology"
+author: "Teddy HLA"
+date: today
+toc: true
+format: 
+  html:
+    embed-resources: true
+    code-fold: true
+---
+
+# Description
+
+This document outlines the methodology used to extract the JAK2 dataset as per defined inclusion criteria.
+
+Effectively, this document is a living log of what has been decided and logical steps in deriving the data to meet the declared criteria to ensure maximal reproducibility. We start of sensitive than narrow down over the process. This results in one file named `clean_jak2_patientlist.csv`. (For internal, I have also written a pickle file and a pandera schema as outputschema yaml file)
+
+The file output will have the following schema.
+
+```{python}
+import pandas as pd
+import pandera as pa
+from pandera import Column, DataFrameSchema, Check, Index
+
+# DEFINE FINAL SCHEMA
+
+schema = DataFrameSchema(
+    {
+        "nhsnumber": Column(str, nullable=True),
+        "gstt_hospnumber": Column(str, nullable=True),
+        "mrn": Column(str, nullable=True),
+        "ethnicity": Column(pa.Category, nullable=True),
+        "sex": Column(pa.Category, nullable=True),
+        "dateofbirth": Column(nullable=True),
+        "dateofdeath": Column(nullable=True),
+        "age": Column(float, nullable=True),
+        "document_content": Column(str, nullable=True),
+        "document_ordername": Column(str, nullable=True),
+        "sampletest_datetime": Column(pa.DateTime, nullable=True),
+        "jak2value_raw": Column(str, nullable=True),
+        "jak2value_clean": Column(float, nullable=True),
+        "source": Column(str, nullable=True),
+    }
+)
+```
+
+## Yield
+Currently, in the final output, we have about 180 unique NHS numbers for a total of 400 odd rows.
+
+# Criteria 
+
+* JAK2 V617F must have at least **2** results **6 months** apart
+
+* who then receive the following medications(interferon/pegylated-IFN, hydroxycarbamide/hydroxyurea or anagrelide)"
+
+# TO DO
+
+Please review this methodology and approve. 
+- [ ] Emily to review and append the cogstack search query.
+- [ ] Zi to review this document.
+- [ ] Zi to decide if timeframe in criteria of *6months* is strict. Why 6? Is there a very good reason to? Currently, this document does not subset patients according to time criteria. If you subset patients by 6 months, n will be 80 odd vs. 200 odd. Small suggestion [If i am doing analysis myself: I would not apply a time frame criteria and include everyone, and then have 6 months diff as a subgroup analysis] 
+# Data Extraction Pipeline
+
+## Step 1: 
+
+Cogstack search was performed using query *Emily's cogstack query*
+
+This query results in any patient that has any mention of JAK2 V617F whether the result is positive or not or whether they receive a test or not. *Emily please confirm*
+
+## Step 2: 
+
+The searach has resulted in two files 
+
+* `EPIC_lab.csv` will be named further as `epic`
+* `EPR_lab (2).csv` will be named further as `legacy`
+
+This document outline how this two csv files are processed to generate single clean dataset which meets the criteria above.
+
+In brief summary, the data processing is in three phases:
+
+> working on `legacy` to identify patients who most likely meet the criteria and extracting relevant information.
+> working on `epic` to do similar
+> working with patients who may meet the criteria from both `legacy` and cross checking in `epic` 
+
+# Data Cleaning Process
+
+### 2.1. remove unnecessary identifiable information and extra columns
+```{python}
+legacy = pd.read_csv("EPR_lab (2).csv")
+legacy.shape
+```
+
+
+This is the dimensions in `legacy` .
+
+```{python}
+epic = pd.read_csv("EPIC_lab.csv")
+epic.shape
+```
+
+This is the dimensions in `epic` .
+
+### 2.2. Parsing date time of the test
+
+JAK2 test datetime is parsed from `legacy` column `document_fields` then cleaned up.
+
+### 2.3. Finding JAK2 cases
+
+There are quite a lot of JAK2 "not detected". This is more sensitive than lookign for "detected". Thus, not detected cases are removed. Manual data check to demonstrate examples of "not detected" cases.
+
+
+```{python}
+legacy.at[2949,"document_Content"]
+```
+
+
+```{python}
+legacy.at[0,"document_Content"]
+```
+
+### 4. Common Keys 
+
+We mostly have patient NHS numbers thus we use this as unique key. 
+
+### 5. Extracting JAK2 values
+
+Simple regex function use to extract JAK2 values. Code available
+
+### 6. Final clean
+
+Remove intermediate data transform columns, ensure correct dtypes and written as csv / pickle.
+
+### 7. Data Validation
+
+Four intermediate dataframes (one each from legacy and epic which are definite and one each which are may be). Finally, they are validated using `pandera` and then written as csv and pickle files
+
+## Dependencies
+
+- minimal so requirements.txt
+- just pandas and [pandera](https://pandera.readthedocs.io/en/stable/) any versions.
+
+
+# 
