@@ -14,7 +14,6 @@ __pycache__/
 # C extensions
 *.so
 
-/projects/local_synth_brca/d3/
 
 # Distribution / packaging
 .Python
@@ -171,5 +170,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 projects/brca_legacy/data/breast_brca_status/
-projects/local_synth_brca/data/breast_brca_status/
+projects/local_synth_brca/data
+projects/local_synth_brca/lightning_logs
+projects/local_synth_brca/checkpoints
+projects/local_synth_brca/d3/
+projects/local_synth_brca/acllmdb/
+/projects/local_synth_brca/multiclass_NLP/utils/org_*
 projects/oncollama

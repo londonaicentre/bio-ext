@@ -32,7 +32,10 @@ def tokenize_function(examples, tokenizer):
         padding="max_length",
         truncation=True,
         max_length=512,
+        return_token_type_ids=False,
+        return_attention_mask=True,
         return_tensors="pt",
+        add_special_tokens=True,
     )
 
 
@@ -102,6 +105,9 @@ def train_model(model, train_dataset, eval_dataset):
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         compute_metrics=compute_metrics,
+        # logger=True,
+        # log_every_n_steps=10,
+        # accelerator="auto",
     )
 
     trainer.train()
@@ -124,9 +130,12 @@ def main():
 
     experiment_name = "brca-binary-classification"
     mlflow.set_tracking_uri("http://localhost:5001")
-    # mlflow.create_experiment(experiment_name)
+
     experiment = mlflow.get_experiment_by_name(experiment_name)
-    print("found exp")
+    if experiment is None:
+        exp_id = mlflow.create_experiment(experiment_name)
+        print("Created new experiment with ID ", exp_id)
+
     mlflow.set_experiment(experiment_name)
     print("Set up Experiment on MLflow")
 
