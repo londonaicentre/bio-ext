@@ -173,3 +173,9 @@ cython_debug/
 projects/brca_legacy/data/breast_brca_status/
 projects/local_synth_brca/data/breast_brca_status/
 projects/oncollama
+
+# In case of data files
+*.csv
+*.pkl 
+*.html
+**/data/
