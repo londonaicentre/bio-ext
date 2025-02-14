@@ -30,3 +30,4 @@ script.py will clean the data extracted from cogstack in the end user desired fo
 
 ## TODO 
 will need a requirements.txt
+will need to be refactored.
