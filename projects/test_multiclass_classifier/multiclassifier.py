@@ -13,7 +13,6 @@ from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
     confusion_matrix,
-    classification_report,
 )
 
 import mlflow
@@ -123,6 +122,13 @@ def compute_metrics(eval_pred):
     macro_precision, macro_recall, macro_f1, _ = precision_recall_fscore_support(
         labels, predictions, average="macro", zero_division=0
     )
+    conf_matrix = confusion_matrix(labels, predictions)
+
+    conf_matrix_dict = {
+        f"cm_{i}_{j}": conf_matrix[i][j]
+        for i in range(conf_matrix.shape[0])
+        for j in range(conf_matrix.shape[1])
+    }
 
     return {
         "accuracy": accuracy,
@@ -132,6 +138,7 @@ def compute_metrics(eval_pred):
         "macro_precision": macro_precision,
         "macro_recall": macro_recall,
         "macro_f1": macro_f1,
+        **conf_matrix_dict,
     }
 
 
@@ -214,7 +221,7 @@ def main():
             },
             artifact_path="bert_model",
             task="text-classification",  # NOTE:DO not change this!
-            # signature=infer_signature(sample_input),
+            signature=infer_signature(sample_input, torch.tensor([[0.1, 0.9]])),
         )
         trainer.model = trainer.model.cpu()
 
