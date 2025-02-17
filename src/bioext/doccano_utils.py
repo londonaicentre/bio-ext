@@ -2,6 +2,7 @@ import os
 import json
 from doccano_client import DoccanoClient
 from datetime import datetime
+import pandas as pd
 import yaml
 
 class DoccanoSession:
@@ -23,36 +24,15 @@ class DoccanoSession:
         self.user = client.get_profile()
         return client
 
-    def _save_projectmetadata(self,project,filepath="projectid.yaml"):
-        """this internal method will save project metadata as yaml at project root
-
-        Args:
-            project (Doccano project object): object which is an output of create_or_update method
-            filepath (str, optional): name and path to save. Defaults to "projectid.yaml".
-        """
-        formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
-        metadata = {
-                "Doccano Project name": project.name,
-                "Doccano Project ID": project.id,
-                "Project creation time": formatted_datetime
-            }
-        
-        try:
-            with open(filepath, "w") as f:
-                yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
-            print(f"Metadata of project has been successfully written to {filepath}.")
-        except (IOError,yaml.YAMLError) as e:
-            print(f"An error {e} encountered and metadata is not saved.")
-    
     def create_or_update_project(
-        self,
-        name,
-        project_type,
-        description,
-        guideline: None,
-        labels: None,
-        label_type: None,
-    ):
+            self,
+            name,
+            project_type,
+            description,
+            guideline: None,
+            labels: None,
+            label_type: None,
+        ):
         """
         Register a new Doccano project
         """
@@ -100,7 +80,39 @@ class DoccanoSession:
             print(f"Failed to create project")
             raise e
 
-    def create_labels(self, labels: list, label_type: str):
+    def _save_projectmetadata(
+            self,
+            project,
+            filepath="projectid.yaml"
+            ):
+        """
+        This internal method will save project metadata as yaml at project root
+
+        Args:
+            project (Doccano project object):
+                object which is an output of create_or_update method
+            filepath (str, optional):
+                name and path to save. Defaults to "projectid.yaml".
+        """
+        formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
+        metadata = {
+                "Doccano Project name": project.name,
+                "Doccano Project ID": project.id,
+                "Project creation time": formatted_datetime
+            }
+
+        try:
+            with open(filepath, "w") as f:
+                yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
+            print(f"Metadata of project has been successfully written to {filepath}.")
+        except (IOError,yaml.YAMLError) as e:
+            print(f"An error {e} encountered and metadata is not saved.")
+
+    def create_labels(
+            self,
+            labels: list,
+            label_type: str
+            ):
         """
         Given list of labels, set up labels for specified or active project
         """
@@ -116,7 +128,12 @@ class DoccanoSession:
 
         return labels
 
-    def load_document(self, text, metadata=None, project_id=None):
+    def load_document(
+            self,
+            text,
+            metadata=None,
+            project_id=None
+            ):
         """
         Load a single document into specified project
         """
@@ -135,7 +152,41 @@ class DoccanoSession:
             print(f"Failed to load document: {e}")
             raise e
 
-    def get_labelled_samples(self, project_id=None):
+    def load_from_file(
+            doc_session,
+            data_file_path,
+            doc_load_cfg
+            ):
+        """
+        Bulk upload documents from a folder, where each file is a doc.
+
+        Args:
+            doc_session (_type_):
+                _description_
+            data_file_path (str):
+                path to folder with document files
+            doc_load_cfg (dict):
+                config details
+        """
+        # create project
+        project = doc_session.create_or_update_project(**doc_load_cfg)
+        # doc_session.update_project()
+        print(f"Using project: {project.name}, with ID {project.id}")
+
+        # load json from data file
+        for file in os.listdir(data_file_path):
+            with open(os.path.join(data_file_path, file), "r") as file:
+                data = json.load(file)
+                # load json to doccano - TODO: avoid uploading duplicates
+                doc_session.load_document(
+                    data["_source"]["text"], metadata={"source_id": data["_id"]}
+                )
+        print(f"Uploaded {len(os.listdir(data_file_path))} examples")
+
+    def get_labelled_samples(
+            self,
+            project_id=None
+            ):
         """
         Streams text and associated labels as generator from specified or active project
         """
@@ -156,7 +207,10 @@ class DoccanoSession:
             ]
             yield example.text, labels
 
-    def _get_label_map(self, project_id):
+    def _get_label_map(
+            self,
+            project_id
+            ):
         """
         Private method to map readable labels to label ids for specified or active project
         Required by get_labelled_samples
@@ -166,40 +220,65 @@ class DoccanoSession:
         )
         return {label_type.id: label_type.text for label_type in label_types}
 
+    def get_labels_dataframe(
+            doc_session,
+            project_id=None,
+            n_samples=None
+            ):
+        """
+        Get labelled documents from Doccano as a pandas DataFrame.
+        Continues to next sample if there is an error
 
-def load_from_file(doc_session, data_file_path, doc_load_cfg):
-    """Bulk upload documents from a folder, where each file is a doc.
+        Args:
+            doc_session:
+                DoccanoSession object
+            project_id:
+                Project ID (uses current project if None)
+            n_samples:
+                Number of samples to retrieve (all if None)
 
-    Args:
-        doc_session (_type_): _description_
-        data_file_path (str): path to folder with document files
-        doc_load_cfg (dict): config details
-    """
-    # create project
-    project = doc_session.create_or_update_project(**doc_load_cfg)
-    # doc_session.update_project()
-    print(f"Using project: {project.name}, with ID {project.id}")
+        Returns:
+            pandas.DataFrame with columns 'text' and 'labels'
+        """
+        texts_list = []
+        labels_list = []
 
-    # load json from data file 
-    for file in os.listdir(data_file_path):
-        with open(os.path.join(data_file_path, file), "r") as file:
-            data = json.load(file)
-            # load json to doccano - TODO: avoid uploading duplicates
-            doc_session.load_document(
-                data["_source"]["text"], metadata={"source_id": data["_id"]}
-            )
-    print(f"Uploaded {len(os.listdir(data_file_path))} examples")
-    
+        labelled_samples = doc_session.get_labelled_samples(project_id)
 
+        if n_samples is None:
+            for i, (text, labels) in enumerate(labelled_samples, 1):
+                try:
+                    texts_list.append(text)
+                    labels_list.append(labels)
+                except Exception as e:
+                    print(f"Error processing sample. \nPosition: {i}; \nText: {text[:50]}; \nLabels: {labels}; \nError: {e}.")
+                    print("Moving to next")
+        else:
+            for i in range(n_samples):
+                try:
+                    text, labels = next(labelled_samples)
+                    texts_list.append(text)
+                    labels_list.append(labels)
+                except Exception as e:
+                    print(f"Error processing sample. \nPosition: {i+1}; \nText: {text[:50]}; \nLabels: {labels}; \nError: {e}.")
+                    print("Moving to next")
 
-def stream_labelled_docs(doc_session, doc_stream_cfg):
-    print(f"Connected to Doccano as user: {doc_session.username}")
+        return pd.DataFrame({
+            'text': texts_list,
+            'labels': labels_list
+        })
 
-    # iterator
-    labelled_samples = doc_session.get_labelled_samples(doc_stream_cfg["PROJECT_ID"])
+    def stream_labelled_docs(
+            doc_session,
+            doc_stream_cfg
+            ):
+        print(f"Connected to Doccano as user: {doc_session.username}")
 
-    # print labelled samples
-    for i, (text, labels) in enumerate(labelled_samples, 1):
-        print(f"\nSample {i}:")
-        print(f"Text: {text[:50]}...")
-        print(f"Labels: {labels}")
+        # iterator
+        labelled_samples = doc_session.get_labelled_samples(doc_stream_cfg["PROJECT_ID"])
+
+        # print labelled samples
+        for i, (text, labels) in enumerate(labelled_samples, 1):
+            print(f"\nSample {i}:")
+            print(f"Text: {text[:50]}...")
+            print(f"Labels: {labels}")
