@@ -1,14 +1,14 @@
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from torchmetrics.functional import auroc
 from transformers import BertModel, AdamW, get_linear_schedule_with_warmup
 from transformers import BertTokenizerFast as BertTokenizer
 import mlflow
-from torchmetrics.functional import precision, recall, f1_score
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn import metrics
+from torchmetrics.functional import precision, recall, f1_score, auroc
+
+# import matplotlib.pyplot as plt
+# import numpy as np
+# from sklearn import metrics
 
 
 class NLPNetwork(pl.LightningModule):
@@ -19,18 +19,18 @@ class NLPNetwork(pl.LightningModule):
         n_training_steps=None,
         n_warmup_steps=None,
         learning_rate=None,
-        label_columns: list = None,
+        # label_columns: list = None,
     ):
         super(NLPNetwork, self).__init__()
         self.bert = BertModel.from_pretrained("bert-base-uncased", return_dict=True)
         self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
         self.classifier = nn.Linear(self.bert.config.hidden_size, n_classes)
-        self.n_training_steps = n_training_steps
-        self.n_classes = n_classes
-        self.n_warmup_steps = n_warmup_steps
         self.criterion = nn.BCELoss()
+        self.n_classes = n_classes
+        self.n_training_steps = n_training_steps
+        self.n_warmup_steps = n_warmup_steps
         self.learning_rate = learning_rate
-        self.label_columns = label_columns
+        # self.label_columns = label_columns
         self.training_step_outputs = []
         self.training_step_labels = []
         self.training_step_loss = []
@@ -53,12 +53,20 @@ class NLPNetwork(pl.LightningModule):
             output: Output from the classifier.
         """
 
-        output = self.bert(input_ids, attention_mask=attention_mask)
+        bert_output = self.bert(input_ids, attention_mask=attention_mask)
         # type <class 'transformers.modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions'>
-        output = self.classifier(output.pooler_output)
-        output = torch.sigmoid(output)
+        classifier_output = self.classifier(bert_output.pooler_output)
+        print(classifier_output.shape)
+        output = torch.sigmoid(classifier_output)
+        print(output.shape)
         loss = 0
         if labels is not None:
+            print(labels)
+            print(type(labels))
+            print(labels.shape)
+
+            # hotcoded_labels = nn.functional.one_hot(labels, self.n_classes)
+
             loss = self.criterion(output, labels)
         return loss, output
 
@@ -73,7 +81,6 @@ class NLPNetwork(pl.LightningModule):
         Returns:
             A dictionary containing loss, predictions, labels and accuracy for the step.
         """
-
         input_ids = batch["input_ids"]
         attention_mask = batch["attention_mask"]
         labels = batch["labels"]
@@ -158,13 +165,13 @@ class NLPNetwork(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         """
-        Operations to perform at the end of each validation epoch. Logs any relevant metrics/misclassified sentences to mlflow.
+        Operations to perform at the end of each validation epoch. Logs any relevant metrics/misclassed sentences to mlflow.
         """
 
         labels = []
         predictions = []
         input_ids = []
-        for i in range(len(self.val_step_labels)):
+        for i in enumerate(self.val_step_labels):
             if i == len(self.val_step_labels) - 1:
                 labels.append(
                     self.val_step_labels[i][: self.val_step_outputs[i].size(0)].int()
@@ -179,22 +186,22 @@ class NLPNetwork(pl.LightningModule):
         labels = torch.cat(labels, dim=0)
         predictions = torch.cat(predictions, dim=0)
 
-        for i, name in enumerate(self.label_columns):
-            # Logging F1 score for each class
-            class_roc_auc = f1_score(predictions[:, i], labels[:, i], task="binary")
-            self.log(f"{name}_roc_auc/Validation", float(class_roc_auc))
+        # for i, name in enumerate(self.label_columns):
+        #     # Logging F1 score for each class
+        #     class_roc_auc = f1_score(predictions[:, i], labels[:, i], task="binary")
+        #     self.log(f"{name}_roc_auc/Validation", float(class_roc_auc))
 
-            # Logging Precision for each class
-            class_precision = precision(predictions[:, i], labels[:, i], task="binary")
-            self.log(f"{name}_precision/Validation", float(class_precision))
+        #     # Logging Precision for each class
+        #     class_precision = precision(predictions[:, i], labels[:, i], task="binary")
+        #     self.log(f"{name}_precision/Validation", float(class_precision))
 
-            # Logging Recall for each class
-            class_recall = recall(predictions[:, i], labels[:, i], task="binary")
-            self.log(f"{name}_recall/Validation", float(class_recall))
+        #     # Logging Recall for each class
+        #     class_recall = recall(predictions[:, i], labels[:, i], task="binary")
+        #     self.log(f"{name}_recall/Validation", float(class_recall))
 
-        # Log misclassified sentences
+        # Log misclassed sentences
         if self.trainer.current_epoch == self.trainer.max_epochs - 1:
-            misclassified_sentences = []
+            misclassed_sentences = []
             for idx, (output, label) in enumerate(zip(predictions, labels)):
                 predicted_label = torch.argmax(output)
                 true_label = torch.argmax(label)
@@ -205,13 +212,13 @@ class NLPNetwork(pl.LightningModule):
                         "predicted_label": predicted_label.item(),
                         "true_label": true_label.item(),
                     }
-                    misclassified_sentences.append(sentence_info)
+                    misclassed_sentences.append(sentence_info)
 
-                file_path = "misclassified_sentences.txt"
+                file_path = "misclassed_sentences.txt"
                 with open(file_path, "w", encoding="utf-8") as file:
-                    for idx, sentence_info in enumerate(misclassified_sentences):
+                    for idx, sentence_info in enumerate(misclassed_sentences):
                         file.write(
-                            f"Misclassified Sentence {idx+1}: {sentence_info['sentence']}\n"
+                            f"Misclassed Sentence {idx+1}: {sentence_info['sentence']}\n"
                         )
                         file.write(
                             f"Predicted Label {idx+1}: {sentence_info['predicted_label']}\n"
@@ -221,7 +228,7 @@ class NLPNetwork(pl.LightningModule):
                         )
 
             # Log the misclassified sentences file as an artifact in MLflow
-            mlflow.log_artifact(file_path, artifact_path="misclassified_sentences")
+            mlflow.log_artifact(file_path, artifact_path="misclassed_sentences")
 
         avg_loss = torch.stack(self.val_step_loss).mean()
         self.log("avg_val_loss", avg_loss)
@@ -253,6 +260,7 @@ class NLPNetwork(pl.LightningModule):
             num_warmup_steps=self.n_warmup_steps,
             num_training_steps=self.n_training_steps,
         )
+        # scheduler = {"scheduler": scheduler, "interval": "step", "frequency": 1}
 
         return dict(
             optimizer=optimizer, lr_scheduler=dict(scheduler=scheduler, interval="step")

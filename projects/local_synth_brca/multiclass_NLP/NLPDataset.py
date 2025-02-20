@@ -10,16 +10,14 @@ class NLPDataset(Dataset):
         self,
         tokenizer=None,
         data: Optional[pd.DataFrame] = None,
-        label_columns: list = None,
         max_token_len: int = 256,
     ):
-        if tokenizer == None:
+        if tokenizer is None:
             tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
         else:
             self.tokenizer = tokenizer
         self.data = data
         self.max_token_len = max_token_len
-        self.label_columns = label_columns
 
     def __len__(self):
         return len(self.data)
@@ -38,22 +36,25 @@ class NLPDataset(Dataset):
         """
 
         data_row = self.data.iloc[index]
-        diag_final = [data_row["TextString"]]
-        labels_series = data_row.iloc[2:-1]  # nth index is nth class
+        diag_final = [data_row["text"]]
+        labels = data_row["labels"]
+        # labels_series = data_row.iloc[2:-1]  # nth index is nth class
         # labels_np = labels_series.to_numpy()
         # print(labels_np[0])
         # label_tensor = torch.from(labels_np)
 
-        encoding = self.encoder(diag_final)
+        encoding = self.tokenize_function(diag_final)
+        print(data_row["labels"])
+        print(torch.FloatTensor(labels))
 
         return dict(
             diag_final=diag_final,
             input_ids=encoding["input_ids"].flatten(),
             attention_mask=encoding["attention_mask"].flatten(),
-            labels=torch.FloatTensor(list(labels_series.values)),
+            labels=torch.FloatTensor(labels),
         )
 
-    def encoder(self, diag_final):
+    def tokenize_function(self, diag_final):
         """
         Encode a given list of text strings using the tokenizer set during initialization.
         Args:

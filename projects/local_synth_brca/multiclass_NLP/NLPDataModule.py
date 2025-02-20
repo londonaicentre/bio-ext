@@ -1,5 +1,6 @@
 import pandas as pd
 from torch.utils.data import DataLoader
+from datasets import Dataset, load_dataset
 import pytorch_lightning as pl
 from multiclass_NLP.NLPDataset import NLPDataset
 import numpy as np
@@ -19,7 +20,6 @@ class NLPDataModule(pl.LightningDataModule):
         batch_size=8,
         max_token_len=256,
         num_workers=2,
-        fold_indices=None,
         random_state=1,
     ):
         """Initialize the DataModule. Set batch size, data path, tokenizer,
@@ -40,42 +40,66 @@ class NLPDataModule(pl.LightningDataModule):
         self.tokenizer = tokenizer
         self.max_token_len = max_token_len
         self.num_workers = num_workers
-        self.fold_indices = fold_indices
         self.random_state = random_state
         self.df = None
-        self.train_df = None
-        self.val_df = None
-        self.label_columns = None
+        # self.train_df = None
+        # self.val_df = None
+        # self.label_columns = None
         self.train_dataset = None
         self.val_dataset = None
-        self.df = pd.read_csv(self.data_path).drop_duplicates()
+        # self.df = load_data(self.data_path)
 
     def setup(self, stage=None):
         """
         Set up the data module. Parse the data and create train and validation datasets.
         """
         print("Running DataModule setup")
-        self.parse_df_data()
-        if self.fold_indices:
-            train_indices, val_indices = self.fold_indices
-            self.train_df = self.df.iloc[train_indices]
-            self.val_df = self.df.iloc[val_indices]
-        else:
-            self.default_train_val_split()
 
-        self.train_dataset = NLPDataset(
-            self.tokenizer,
-            self.train_df,
-            self.label_columns,
-            self.max_token_len,
+        raw_dataset = load_dataset("json", data_files=self.data_path, split="train")
+        single_label_dataset = raw_dataset.map(select_label)
+        cleaned_dataset = single_label_dataset.remove_columns(
+            ["id", "source_id", "Comments", "label"]
         )
 
-        self.val_dataset = NLPDataset(
-            self.tokenizer,
-            self.val_df,
-            self.label_columns,
-            self.max_token_len,
+        # label_enum = {k: j for j, k in enumerate(set(cleaned_dataset["labels"]))}
+        # num_labels = len(label_enum)
+        # cleaned_dataset["labels"] = cleaned_dataset["labels"].apply(
+        #     lambda x: [1.0 if label_enum[x] == i else 0.0 for i in range(num_labels)]
+        # )
+
+        # print("after encoding")
+        # print(cleaned_dataset[0])
+
+        encoded_dataset = cleaned_dataset.class_encode_column("labels")
+        class_label_feature = encoded_dataset.features["labels"]
+        # casted_dataset = encoded_dataset.cast_column("labels", class_label_feature)
+        # print(encoded_dataset.features)
+
+        self.num_classes = encoded_dataset.features["labels"].num_classes
+
+        tokenized_dataset = encoded_dataset.map(
+            lambda x: tokenize_function(x, self.tokenizer, self.max_token_len),
+            batched=True,
         )
+        tokenized_dataset.set_format("torch")
+
+        dataset_dict = tokenized_dataset.train_test_split(
+            test_size=0.2,
+            # random_state=self.random_state,
+            # stratify=self.df["labels"],
+        )
+        # print(tokenized_dataset.features)
+        self.df = tokenized_dataset.to_pandas()
+
+        # if self.fold_indices:
+        #     train_indices, val_indices = self.fold_indices
+        #     self.train_df = self.df.iloc[train_indices]
+        #     self.val_df = self.df.iloc[val_indices]
+        # else:
+        #     self.default_train_val_split()
+
+        self.train_dataset = dataset_dict["train"]
+        self.val_dataset = dataset_dict["test"]
 
     def train_dataloader(self):
         """
@@ -84,7 +108,8 @@ class NLPDataModule(pl.LightningDataModule):
         Returns:
             DataLoader: Data loader for the training data.
         """
-        print("train_dataloader")
+        print("self.train_dataset")
+        # print(self.train_dataset.to_pandas().head())
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
@@ -110,44 +135,6 @@ class NLPDataModule(pl.LightningDataModule):
             shuffle=False,
         )
 
-    def parse_df_data(self):
-        """
-        Parse the data. Create label dictionary and add 'label' and 'data_type' columns.
-        Split the data into train and validation dataframes. Store the label columns in a pickle file.
-        """
-
-        print("parse_df_data")
-        self.label_columns = self.df.ClassLabel.unique()
-        self.label_dict = {}
-        for index, possible_label in enumerate(self.label_columns):
-            self.label_dict[possible_label] = index
-            self.df[possible_label] = 0
-            self.df.loc[self.df["ClassLabel"] == possible_label, [possible_label]] = 1
-
-        self.df["label"] = self.df.ClassLabel.replace(self.label_dict)
-        # result.infer_objects(copy=False)
-        self.length_label_dict = len(self.label_dict)
-        self.num_labels = self.length_label_dict
-        self.num_classes = len(list(set(self.df.label)))
-
-        with open("label_columns.data", "wb") as filehandle:
-            pickle.dump(self.label_columns, filehandle)
-
-        class_counts = self.df["ClassLabel"].value_counts()
-        for class_label, count in class_counts.items():
-            mlflow.log_param(f"class_{class_label}_count", count)
-
-    def default_train_val_split(self):
-        print("default_train_val_split")
-        train_df, val_df = train_test_split(
-            self.df,
-            test_size=0.2,
-            random_state=self.random_state,
-            stratify=self.df["label"],
-        )
-        self.train_df = train_df
-        self.val_df = val_df
-
     def steps_per_epoch(self):
         """
         Calculate and return the number of steps per epoch based on the batch size.
@@ -155,10 +142,11 @@ class NLPDataModule(pl.LightningDataModule):
         Returns:
             int: Number of steps per epoch.
         """
-        if self.train_df is None or len(self.train_df) == 0:
-            self.parse_df_data()
-            self.default_train_val_split()
-        return len(self.train_df) // self.batch_size
+        # print(len(self.train_dataset))
+        # if self.train_dataset is None or len(self.train_dataset) == 0:
+        #     self.parse_df_data()
+        #     self.default_train_val_split()
+        return len(self.train_dataset) // self.batch_size
 
     def dataset_stats(self, dataset) -> dict:
         """
@@ -176,3 +164,22 @@ class NLPDataModule(pl.LightningDataModule):
         label_counts_dict = label_counts.to_dict()
         stats["label_counts"] = label_counts_dict
         return stats
+
+
+def select_label(ex):
+    ex["labels"] = ex["label"][0]
+    return ex
+
+
+def tokenize_function(examples, tokenizer, max_token_len):
+    return tokenizer(
+        examples["text"],
+        padding="max_length",
+        truncation=True,
+        # max_length=512,
+        max_length=max_token_len,
+        # return_token_type_ids=False,
+        # return_attention_mask=True,
+        return_tensors="pt",
+        add_special_tokens=True,
+    )

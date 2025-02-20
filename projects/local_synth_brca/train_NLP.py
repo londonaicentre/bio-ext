@@ -1,4 +1,3 @@
-import os
 import logging
 import sys
 import configparser
@@ -15,6 +14,8 @@ from multiclass_NLP.NLPDataModule import NLPDataModule
 from multiclass_NLP.NLPNetwork import NLPNetwork
 from multiclass_NLP.utils.tools import wrap_and_log
 
+logger = logging.getLogger(__name__)
+
 
 def train(
     data_path,
@@ -22,8 +23,6 @@ def train(
     batch_size=6,
     model_name="bert-base-uncased",
     learning_rate=1e-5,
-    use_kfold=False,
-    n_folds=0,
     random_state=42,
     save_model=False,
 ):
@@ -41,10 +40,9 @@ def train(
     Returns:
         None
     """
-    print("set tokenizer")
     tokenizer = BertTokenizer.from_pretrained(model_name)
 
-    print("set DataModule")
+    print("initialise DataModule")
     data_module = NLPDataModule(
         data_path=data_path,
         tokenizer=tokenizer,
@@ -52,87 +50,87 @@ def train(
         max_token_len=512,
         random_state=random_state,
     )
-    print("Is this sanity checking?????????")
     data_module.setup()
+    # dm = GLUEDataModule("distilbert-base-uncased")
+    # dm.prepare_data()
+    # dm.setup("fit")f
+    print(type(next(iter(data_module.train_dataloader()))["input_ids"]))
 
     mlflow.end_run()
     print("TRAINING BEGINS")
     # KFold, data preparation
+    # if use_kfold and n_folds > 1:
+
+    #     kfold = KFold(n_splits=n_folds, shuffle=True, random_state=42)
+    #     with mlflow.start_run(run_name=f"Parent_Run_{current_time}"):
+    #         for fold, (train_idx, val_idx) in enumerate(kfold.split(data_module.df)):
+    #             logging.info(f"Training fold {fold+1}/{n_folds}")
+
+    #             run_name = f"{'KFold_' + str(fold + 1) if fold >= 0 else 'Train'}_{current_time}"
+
+    #             mlflow.pytorch.autolog(log_models=False)
+    #             with mlflow.start_run(run_name=run_name, nested=True):
+    #                 print("Training per fold")
+
+    #                 # Initialize DataModule for current fold
+    #                 data_module = NLPDataModule(
+    #                     data_path=data_path,
+    #                     tokenizer=tokenizer,
+    #                     batch_size=batch_size,
+    #                     max_token_len=512,
+    #                     fold_indices=(train_idx, val_idx),
+    #                     random_state=random_state,
+    #                 )
+    #                 data_module.setup()
+    #                 total_training_steps = data_module.steps_per_epoch() * n_epochs
+    #                 warmup_steps = total_training_steps // 5
+
+    #                 model = NLPNetwork(
+    #                     n_classes=data_module.num_classes,
+    #                     n_warmup_steps=warmup_steps,
+    #                     n_training_steps=total_training_steps,
+    #                     learning_rate=learning_rate,
+    #                     label_columns=data_module.label_columns,
+    #                 )
+
+    #                 mlflow_logging_and_checkpoint(
+    #                     model=model,
+    #                     data_module=data_module,
+    #                     fold=-1,
+    #                     n_epochs=n_epochs,
+    #                     tokenizer=tokenizer,
+    #                     run_name=run_name,
+    #                     save=save_model,
+    #                 )
+
+    # else:
     current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    with mlflow.start_run(run_name="Parent_Run_{current_time}"):
-        if use_kfold and n_folds > 1:
+    mlflow.pytorch.autolog(log_models=False)
+    with mlflow.start_run(run_name=f"Run_{current_time}"):
 
-            kfold = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-            for fold, (train_idx, val_idx) in enumerate(kfold.split(data_module.df)):
-                logging.info(f"Training fold {fold+1}/{n_folds}")
+        total_training_steps = data_module.steps_per_epoch() * n_epochs
+        warmup_steps = total_training_steps // 5
 
-                run_name = f"{'KFold_' + str(fold + 1) if fold >= 0 else 'Train'}_{current_time}"
+        model = NLPNetwork(
+            n_classes=data_module.num_classes,
+            n_warmup_steps=warmup_steps,
+            n_training_steps=total_training_steps,
+            learning_rate=learning_rate,
+            # label_columns=data_module.label_columns,
+        )
 
-                mlflow.pytorch.autolog(log_models=False)
-                with mlflow.start_run(run_name=run_name, nested=True):
-                    print("Training per fold")
-
-                    # Initialize DataModule for current fold
-                    data_module = NLPDataModule(
-                        data_path=data_path,
-                        tokenizer=tokenizer,
-                        batch_size=batch_size,
-                        max_token_len=512,
-                        fold_indices=(train_idx, val_idx),
-                        random_state=random_state,
-                    )
-                    data_module.setup()
-                    total_training_steps = data_module.steps_per_epoch() * n_epochs
-                    warmup_steps = total_training_steps // 5
-
-                    model = NLPNetwork(
-                        n_classes=data_module.num_classes,
-                        n_warmup_steps=warmup_steps,
-                        n_training_steps=total_training_steps,
-                        learning_rate=learning_rate,
-                        label_columns=data_module.label_columns,
-                    )
-
-                    mlflow_logging_and_checkpoint(
-                        model=model,
-                        data_module=data_module,
-                        fold=-1,
-                        n_epochs=n_epochs,
-                        tokenizer=tokenizer,
-                        run_name=run_name,
-                        save=save_model,
-                    )
-
-        else:
-            mlflow.pytorch.autolog(log_models=False)
-            with mlflow.start_run(run_name="child_Run_{current_time}", nested=True):
-
-                total_training_steps = data_module.steps_per_epoch() * n_epochs
-                warmup_steps = total_training_steps // 5
-
-                print("Meow")
-
-                model = NLPNetwork(
-                    n_classes=data_module.length_label_dict,
-                    n_warmup_steps=warmup_steps,
-                    n_training_steps=total_training_steps,
-                    learning_rate=learning_rate,
-                    label_columns=data_module.label_columns,
-                )
-                print("meow")
-
-                run = mlflow.active_run()
-                run_name = run.info.run_id
-                # Setup MLflow and checkpointing for standard training
-                mlflow_logging_and_checkpoint(
-                    model=model,
-                    data_module=data_module,
-                    fold=-1,
-                    n_epochs=n_epochs,
-                    tokenizer=tokenizer,
-                    run_name=run_name,
-                    save=save_model,
-                )
+        run = mlflow.active_run()
+        run_name = run.info.run_id
+        # Setup MLflow and checkpointing for standard training
+        mlflow_logging_and_checkpoint(
+            model=model,
+            data_module=data_module,
+            fold=-1,
+            n_epochs=n_epochs,
+            tokenizer=tokenizer,
+            run_name=run_name,
+            save=save_model,
+        )
 
 
 def mlflow_logging_and_checkpoint(
@@ -170,6 +168,16 @@ def mlflow_logging_and_checkpoint(
 
 
 if __name__ == "__main__":
+    # Setup logging
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        handlers=[logging.StreamHandler(sys.stdout)],
+    )
+
+    # log_level = training_args.get_process_log_level()
+    # logger.setLevel(log_level)
+
     if len(sys.argv) > 0:
         config_path = sys.argv[1]
     else:
@@ -208,8 +216,6 @@ if __name__ == "__main__":
     batch_size = int(config["training"]["BATCH_SIZE"])
     model_name = config["training"]["MODEL_NAME"]
     n_epochs = int(config["training"]["N_EPOCHS"])
-    use_kfold = config.getboolean("training", "KFOLD")
-    n_folds = int(config["training"]["N_FOLDS"]) if use_kfold else 0
     save = config["training"]["SAVE_MODEL"]
 
     random_state = int(config["training"]["RANDOM_STATE"])
@@ -220,8 +226,6 @@ if __name__ == "__main__":
         batch_size,
         model_name,
         learning_rate,
-        use_kfold,
-        n_folds,
         random_state=random_state,
         save_model=save,
     )

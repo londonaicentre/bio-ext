@@ -23,11 +23,11 @@ def wrap_and_log(model, tokenizer):
     model.eval()
     model.freeze()
     wrappedModel = Wrapper(model, tokenizer)
-    test_df = pd.DataFrame(["Test string 1", "Test string 2"], columns=["TextString"])
+    test_df = pd.DataFrame(["Test string 1", "Test string 2"], columns=["text"])
     signature = mlflow.models.signature.infer_signature(
         test_df, wrappedModel.predict(None, test_df)
     )
-    print("Update code pathSSsssssss")
+    print("Update code paths")
     mlflow.pyfunc.log_model(
         "project_nlp",
         python_model=wrappedModel,
