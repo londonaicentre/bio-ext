@@ -84,7 +84,13 @@ def load_and_prepare_data(unzipped_file, tokenizer):
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    return {"accuracy": accuracy_score(labels, predictions)}
+    # pred_class = torch.argmax(logits, dim=1)
+    accuracy = accuracy_score(labels, predictions)
+
+    print("\n pred, expected labels:", predictions, labels)
+    print("\n accuracy:", accuracy)
+    mlflow.log_metric("accuracy", round(accuracy, 4))
+    return {"accuracy": accuracy}
 
 
 def train_model(model, train_dataset, eval_dataset):
@@ -109,7 +115,7 @@ def train_model(model, train_dataset, eval_dataset):
         # log_every_n_steps=10,
         # accelerator="auto",
     )
-
+    # print(trainer.args)
     trainer.train()
 
     return trainer
@@ -122,7 +128,7 @@ def main():
     print("Prepared model and tokenizer")
 
     # load data
-    unzipped_file = "data/admin.jsonl"  # "data/breast_brca_binary_labelled.json"
+    unzipped_file = "data/binary_BRCA.jsonl"  # "data/multiclass_BRCA.json"
     # labels expected to be an integer!
     # use a LabelEncoder or similar at export from Doccano
     train_dataset, eval_dataset = load_and_prepare_data(unzipped_file, tokenizer)
