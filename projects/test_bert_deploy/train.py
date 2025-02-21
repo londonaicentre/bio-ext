@@ -87,7 +87,7 @@ def main():
     print("Loaded and prepared data")
 
     # start mlflow run
-    with mlflow.start_run() as run:
+    with mlflow.start_run():
         # load model
         model, tokenizer = prepare_model_and_tokenizer()
         print("Prepared model and tokenizer")

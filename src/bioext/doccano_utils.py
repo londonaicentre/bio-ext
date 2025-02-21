@@ -71,9 +71,10 @@ class DoccanoSession:
         # Project is found, update details if allowed
         if len(project_ids) == 1:
             # check allow_update tag
-            assert "allow_update" in project_ids[0][1], (
-                f"Project found with matching name and ID {project_ids[0][0]} is not allowed to be updated"
-            )
+            assert (
+                "allow_update" in project_ids[0][1]
+            ), f"""Project found with matching name and ID {project_ids[0][0]}
+                is not allowed to be updated"""
             project = self.client.update_project(
                 project_ids[0][0],
                 name=name,

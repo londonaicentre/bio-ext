@@ -128,7 +128,7 @@ class ElasticsearchSession:
                 yield doc
 
         successes = 0
-        for ok, action in helpers.streaming_bulk(
+        for ok, _action in helpers.streaming_bulk(
             client=self.es,
             index=index_name,
             actions=doc_generator(),
