@@ -1,6 +1,6 @@
-from bioext.elastic_utils import GsttProxyNode, ElasticsearchSession
-
 from dotenv import load_dotenv
+
+from bioext.elastic_utils import ElasticsearchSession
 
 load_dotenv()
 

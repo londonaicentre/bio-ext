@@ -4,21 +4,16 @@
 import os
 import warnings
 
+import mlflow
 import numpy as np
 import pandas as pd
-
-from sklearn.model_selection import train_test_split
+from dotenv import load_dotenv
+from mlflow.models import infer_signature
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GridSearchCV
-
-import mlflow
-from mlflow.tracking import MlflowClient
-from mlflow.models import infer_signature
-
-from dotenv import load_dotenv
 
 load_dotenv()
 

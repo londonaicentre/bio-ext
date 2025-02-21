@@ -1,9 +1,10 @@
-import os
 import json
-from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
-from elasticsearch import helpers
+import os
 
 from dotenv import load_dotenv
+from elasticsearch import helpers
+
+from bioext.elastic_utils import ElasticsearchSession
 
 load_dotenv()
 

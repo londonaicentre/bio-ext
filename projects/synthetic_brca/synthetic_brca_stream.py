@@ -1,6 +1,6 @@
-from bioext.doccano_utils import DoccanoSession
-
 from dotenv import load_dotenv
+
+from bioext.doccano_utils import DoccanoSession
 
 load_dotenv()
 

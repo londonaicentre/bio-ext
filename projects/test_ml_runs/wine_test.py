@@ -2,19 +2,17 @@
 # This script is adapted from the test script by https://github.com/sachua/mlflow-docker-compose
 
 import os
-import warnings
 import sys
-
-import pandas as pd
-import numpy as np
-from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import ElasticNet
+import warnings
 
 import mlflow
 import mlflow.sklearn
-
+import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
+from sklearn.linear_model import ElasticNet
+from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
+from sklearn.model_selection import train_test_split
 
 load_dotenv()
 

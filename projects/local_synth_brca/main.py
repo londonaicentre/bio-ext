@@ -1,10 +1,11 @@
 import argparse
-from tqdm import tqdm
 import json
-import os
-from bioext.elastic_utils import ElasticsearchSession
-from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
+
 from dotenv import load_dotenv
+from tqdm import tqdm
+
+from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
+from bioext.elastic_utils import ElasticsearchSession
 
 
 def parse_CLI_args():  # -> argparse.Namespace:

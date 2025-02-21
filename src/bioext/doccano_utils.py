@@ -1,8 +1,9 @@
-import os
 import json
-from doccano_client import DoccanoClient
+import os
 from datetime import datetime
+
 import yaml
+from doccano_client import DoccanoClient
 
 
 class DoccanoSession:
@@ -98,7 +99,7 @@ class DoccanoSession:
             self._save_projectmetadata(project, filepath="projectid.yaml")
             return project
         except Exception as e:
-            print(f"Failed to create project")
+            print("Failed to create project")
             raise e
 
     def create_labels(self, labels: list, label_type: str):

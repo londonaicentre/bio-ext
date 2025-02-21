@@ -1,9 +1,10 @@
-import os
 import json
-from elasticsearch import Elasticsearch, helpers
-from elastic_transport import RequestsHttpNode
-import requests
+import os
 import random
+
+import requests
+from elastic_transport import RequestsHttpNode
+from elasticsearch import Elasticsearch, helpers
 
 
 # thanks @LAdams for implementing required http proxy
