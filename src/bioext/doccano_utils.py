@@ -1,8 +1,12 @@
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Generator, Literal
 
+import doccano_client.models
+import doccano_client.models.example
+import doccano_client.models.label
+import doccano_client.models.project
 import yaml
 from doccano_client import DoccanoClient
 
@@ -59,7 +63,7 @@ class DoccanoSession:
         guideline,
         labels,
         label_type,
-    ):
+    ) -> doccano_client.models.project.Project:
         """
         Register a new Doccano project
         """
@@ -112,7 +116,7 @@ class DoccanoSession:
         self,
         labels: list,
         label_type: Literal["category", "span", "relation"],
-    ):
+    ) -> list:
         """
         Given list of labels, set up labels for specified or active project
         """
@@ -130,9 +134,12 @@ class DoccanoSession:
 
     def load_document(
         self, text, metadata: Dict[str, Any] | None = None, project_id: int | None = None
-    ):
+    ) -> doccano_client.models.example.Example:
         """
         Load a single document into specified project
+
+        Returns:
+            doccano_client.models.example.Example: the loaded document with metadata
         """
         project_id = project_id or self.current_project_id
         if not project_id:
@@ -141,18 +148,16 @@ class DoccanoSession:
         if metadata is None:
             metadata = {}
 
-        try:
-            example = self.client.create_example(
-                project_id=project_id,
-                text=text,
-                meta=metadata,
-            )
-            return example
-        except Exception as e:
-            print(f"Failed to load document: {e}")
-            raise e
+        example = self.client.create_example(
+            project_id=project_id,
+            text=text,
+            meta=metadata,
+        )
+        return example
 
-    def get_labelled_samples(self, project_id: int | None = None):
+    def get_labelled_samples(
+        self, project_id: int | None = None
+    ) -> Generator[tuple[str | None, list[str]]]:
         """
         Streams text and associated labels as generator from specified or active project
         """
@@ -173,7 +178,7 @@ class DoccanoSession:
             ]
             yield example.text, labels
 
-    def _get_label_map(self, project_id):
+    def _get_label_map(self, project_id) -> Dict[int | None, str]:
         """
         Private method to map readable labels to label ids for specified or active project
         Required by get_labelled_samples
@@ -182,7 +187,7 @@ class DoccanoSession:
         return {label_type.id: label_type.text for label_type in label_types}
 
 
-def load_from_file(doc_session, data_file_path, doc_load_cfg):
+def load_from_file(doc_session, data_file_path, doc_load_cfg) -> None:
     """Bulk upload documents from a folder, where each file is a doc.
 
     Args:
@@ -204,7 +209,7 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
     print(f"Uploaded {len(os.listdir(data_file_path))} examples")
 
 
-def stream_labelled_docs(doc_session, doc_stream_cfg):
+def stream_labelled_docs(doc_session, doc_stream_cfg) -> None:
     print(f"Connected to Doccano as user: {doc_session.username}")
 
     # iterator

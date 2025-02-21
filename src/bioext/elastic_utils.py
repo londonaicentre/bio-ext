@@ -1,9 +1,10 @@
 import json
 import os
 import random
+from typing import Any, Dict, Generator, Iterable
 
 import requests
-from elastic_transport import RequestsHttpNode
+from elastic_transport import RequestsHttpNode, ObjectApiResponse
 from elasticsearch import Elasticsearch, helpers
 
 
@@ -26,7 +27,7 @@ class GsttProxyNode(RequestsHttpNode):
 
 
 class ElasticsearchSession:
-    def __init__(self, proxy=None, conn_mode: str = "HTTP"):
+    def __init__(self, proxy=None, conn_mode: str = "HTTP") -> None:
         requests.packages.urllib3.disable_warnings(  # type: ignore
             requests.packages.urllib3.exceptions.InsecureRequestWarning  # type: ignore
         )
@@ -76,7 +77,7 @@ class ElasticsearchSession:
         #     "Could not connect with credentials provided"
         # )
 
-    def create_index(self, index_name, mappings, settings=None, overwrite=False):
+    def create_index(self, index_name, mappings, settings=None, overwrite=False) -> None:
         """
         Creates an index in Elasticsearch with option to overwrite existing one.
         Requires a config input (mappings) that describes fields, e.g.:
@@ -102,23 +103,21 @@ class ElasticsearchSession:
             },
         )
 
-    def list_indices(self):
+    def list_indices(self) -> ObjectApiResponse:
         return self.es.indices.get_alias(index="*")
 
-    def _yield_doc(self, data_file_path):
-        """Reads the file through csv.DictReader() and for each row
+    def _yield_doc(self, data_file_path) -> Generator[Any, Any, Any]:
+        """
+        Reads the file through csv.DictReader() and for each row
         yields a single document. This function is passed into the bulk()
         helper to create many documents in sequence.
         """
         # load json from data file
-        try:
-            with open(data_file_path, "r") as file:
-                data = json.load(file)
-                yield from data
-        except Exception as e:
-            print(f"Failed to load samples: {str(e)}")
+        with open(data_file_path, "r") as file:
+            data = json.load(file)
+            yield from data
 
-    def bulk_load_documents(self, index_name, documents, progress_callback=None):
+    def bulk_load_documents(self, index_name, documents, progress_callback=None) -> int:
         """
         Bulk load documents into Elasticsearch.
         """
@@ -139,7 +138,9 @@ class ElasticsearchSession:
 
         return successes
 
-    def bulk_retrieve_documents(self, index_name, query, scroll="2m", save_to_file=None):
+    def bulk_retrieve_documents(
+        self, index_name, query, scroll="2m", save_to_file=None
+    ) -> Iterable[Dict[str, Any]]:
         """
         Retrieve documents from Elasticsearch using scroll API
         """
@@ -166,7 +167,7 @@ class ElasticsearchSession:
 
         return docs
 
-    def get_random_doc_ids(self, index_name, size, query=None):
+    def get_random_doc_ids(self, index_name, size, query=None) -> list[Any]:
         """
         Get a random subset of document IDs from a given document index
         """
@@ -186,12 +187,8 @@ class ElasticsearchSession:
         # random sample
         return random.sample(all_ids, min(size, len(all_ids)))
 
-    def get_document_by_id(self, index_name, doc_id):
+    def get_document_by_id(self, index_name, doc_id) -> ObjectApiResponse:
         """
         Retrieve single document based on its ID
         """
-        try:
-            return self.es.get(index=index_name, id=doc_id)
-        except Exception as e:
-            print(f"Error retrieving document {doc_id}: {e}")
-            return None
+        return self.es.get(index=index_name, id=doc_id)
