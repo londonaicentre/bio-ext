@@ -6,6 +6,7 @@ from bioext.elastic_utils import ElasticsearchSession
 from bioext.doccano_utils import DoccanoSession, load_from_file, stream_labelled_docs
 from dotenv import load_dotenv
 
+
 def parse_CLI_args():  # -> argparse.Namespace:
     """Parse command line arguments
 

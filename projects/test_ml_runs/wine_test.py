@@ -15,10 +15,12 @@ import mlflow
 import mlflow.sklearn
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Override MinIO endpoint for local access
-os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://localhost:9000'
+os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://localhost:9000"
+
 
 def eval_metrics(actual, pred):
     rmse = np.sqrt(root_mean_squared_error(actual, pred))
@@ -26,11 +28,12 @@ def eval_metrics(actual, pred):
     r2 = r2_score(actual, pred)
     return rmse, mae, r2
 
+
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-    
+
     mlflow.set_tracking_uri("http://localhost:5000")
-    
+
     np.random.seed(40)
 
     data = pd.read_csv("data/wine-quality.csv")

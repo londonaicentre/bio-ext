@@ -1,11 +1,13 @@
 from bioext.doccano_utils import DoccanoSession
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 ########################## DEFINE SET-UP VARIABLES ##########################
 PROJECT_ID = 6
 #############################################################################
+
 
 def main():
     session = DoccanoSession()
@@ -19,6 +21,7 @@ def main():
         print(f"\nSample {i}:")
         print(f"Text: {text[:100]}...")
         print(f"Labels: {labels}")
+
 
 if __name__ == "__main__":
     main()

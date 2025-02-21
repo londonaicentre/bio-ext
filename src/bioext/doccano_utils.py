@@ -4,6 +4,7 @@ from doccano_client import DoccanoClient
 from datetime import datetime
 import yaml
 
+
 class DoccanoSession:
     def __init__(self, server=None):
         self.username = os.getenv("DOCCANO_USERNAME")
@@ -23,7 +24,7 @@ class DoccanoSession:
         self.user = client.get_profile()
         return client
 
-    def _save_projectmetadata(self,project,filepath="projectid.yaml"):
+    def _save_projectmetadata(self, project, filepath="projectid.yaml"):
         """this internal method will save project metadata as yaml at project root
 
         Args:
@@ -32,18 +33,18 @@ class DoccanoSession:
         """
         formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
         metadata = {
-                "Doccano Project name": project.name,
-                "Doccano Project ID": project.id,
-                "Project creation time": formatted_datetime
-            }
-        
+            "Doccano Project name": project.name,
+            "Doccano Project ID": project.id,
+            "Project creation time": formatted_datetime,
+        }
+
         try:
             with open(filepath, "w") as f:
-                yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
+                yaml.dump(metadata, f, sort_keys=False, default_flow_style=False)
             print(f"Metadata of project has been successfully written to {filepath}.")
-        except (IOError,yaml.YAMLError) as e:
+        except (IOError, yaml.YAMLError) as e:
             print(f"An error {e} encountered and metadata is not saved.")
-    
+
     def create_or_update_project(
         self,
         name,
@@ -69,9 +70,9 @@ class DoccanoSession:
         # Project is found, update details if allowed
         if len(project_ids) == 1:
             # check allow_update tag
-            assert (
-                "allow_update" in project_ids[0][1]
-            ), f"Project found with matching name and ID {project_ids[0][0]} is not allowed to be updated"
+            assert "allow_update" in project_ids[0][1], (
+                f"Project found with matching name and ID {project_ids[0][0]} is not allowed to be updated"
+            )
             project = self.client.update_project(
                 project_ids[0][0],
                 name=name,
@@ -80,8 +81,8 @@ class DoccanoSession:
                 guideline=guideline,
             )
             self.current_project_id = project.id
-            #dump project metadata using internal method
-            self._save_projectmetadata(project,filepath="projectid.yaml")
+            # dump project metadata using internal method
+            self._save_projectmetadata(project, filepath="projectid.yaml")
             return project
 
         # Project is NOT found, create it
@@ -94,7 +95,7 @@ class DoccanoSession:
             )
             self.current_project_id = project.id
             self.create_labels(labels, label_type)
-            self._save_projectmetadata(project,filepath="projectid.yaml")
+            self._save_projectmetadata(project, filepath="projectid.yaml")
             return project
         except Exception as e:
             print(f"Failed to create project")
@@ -146,9 +147,7 @@ class DoccanoSession:
 
         for example in self.client.list_examples(project_id=project_id):
             categories = list(
-                self.client.list_categories(
-                    project_id=project_id, example_id=example.id
-                )
+                self.client.list_categories(project_id=project_id, example_id=example.id)
             )
             labels = [
                 label_map.get(category.label, f"unexpected label: {category.label}")
@@ -161,9 +160,7 @@ class DoccanoSession:
         Private method to map readable labels to label ids for specified or active project
         Required by get_labelled_samples
         """
-        label_types = self.client.list_label_types(
-            project_id=project_id, type="category"
-        )
+        label_types = self.client.list_label_types(project_id=project_id, type="category")
         return {label_type.id: label_type.text for label_type in label_types}
 
 
@@ -180,16 +177,13 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
     # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
-    # load json from data file 
+    # load json from data file
     for file in os.listdir(data_file_path):
         with open(os.path.join(data_file_path, file), "r") as file:
             data = json.load(file)
             # load json to doccano - TODO: avoid uploading duplicates
-            doc_session.load_document(
-                data["_source"]["text"], metadata={"source_id": data["_id"]}
-            )
+            doc_session.load_document(data["_source"]["text"], metadata={"source_id": data["_id"]})
     print(f"Uploaded {len(os.listdir(data_file_path))} examples")
-    
 
 
 def stream_labelled_docs(doc_session, doc_stream_cfg):

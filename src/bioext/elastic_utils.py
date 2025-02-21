@@ -53,9 +53,7 @@ class ElasticsearchSession:
             self.es_pwd = os.getenv("ELASTIC_PWD")
 
             if not all([self.es_user, self.es_pwd]):
-                raise ValueError(
-                    "Check ELASTIC_USER and ELASTIC_PWD are in env variables"
-                )
+                raise ValueError("Check ELASTIC_USER and ELASTIC_PWD are in env variables")
 
             self.es = Elasticsearch(
                 hosts=self.es_server,
@@ -140,9 +138,7 @@ class ElasticsearchSession:
 
         return successes
 
-    def bulk_retrieve_documents(
-        self, index_name, query, scroll="2m", save_to_file=None
-    ):
+    def bulk_retrieve_documents(self, index_name, query, scroll="2m", save_to_file=None):
         """
         Retrieve documents from Elasticsearch using scroll API
         """
