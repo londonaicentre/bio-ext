@@ -1,36 +1,40 @@
 import json
 import os
 from datetime import datetime
+from typing import Any, Dict, Literal
 
 import yaml
 from doccano_client import DoccanoClient
 
 
 class DoccanoSession:
-    def __init__(self, server=None):
-        self.username = os.getenv("DOCCANO_USERNAME")
-        self.password = os.getenv("DOCCANO_PASSWORD")
-        self.server = os.getenv("DOCCANO_SERVER", "http://localhost:8000")
+    def __init__(self, server=None) -> None:
+        self.username: str = os.environ["DOCCANO_USERNAME"]
+        self.password: str = os.environ["DOCCANO_PASSWORD"]
+        self.server: str = os.getenv("DOCCANO_SERVER", "http://localhost:8000")
 
-        self.user = None
-        self.current_project_id = None
         self.client = self.create_session()
+        self.user = self.client.get_profile()
+        self.current_project_id: int | None = None
 
-    def create_session(self):
+    def create_session(self) -> DoccanoClient:
         """
         Connect and log on to a Doccano server
         """
         client = DoccanoClient(self.server)
         client.login(username=self.username, password=self.password)
-        self.user = client.get_profile()
         return client
 
-    def _save_projectmetadata(self, project, filepath="projectid.yaml"):
+    def _save_projectmetadata(self, project, filepath="projectid.yaml") -> None:
         """this internal method will save project metadata as yaml at project root
 
         Args:
             project (Doccano project object): object which is an output of create_or_update method
             filepath (str, optional): name and path to save. Defaults to "projectid.yaml".
+
+        Raises:
+            IOError: if file is not found
+            yaml.YAMLError: if yaml is malformed
         """
         formatted_datetime = datetime.now().astimezone().strftime("%d-%m-%Y %H:%M:%S %Z%z")
         metadata = {
@@ -45,15 +49,16 @@ class DoccanoSession:
             print(f"Metadata of project has been successfully written to {filepath}.")
         except (IOError, yaml.YAMLError) as e:
             print(f"An error {e} encountered and metadata is not saved.")
+            raise e
 
     def create_or_update_project(
         self,
         name,
         project_type,
         description,
-        guideline: None,
-        labels: None,
-        label_type: None,
+        guideline,
+        labels,
+        label_type,
     ):
         """
         Register a new Doccano project
@@ -103,7 +108,11 @@ class DoccanoSession:
             print("Failed to create project")
             raise e
 
-    def create_labels(self, labels: list, label_type: str):
+    def create_labels(
+        self,
+        labels: list,
+        label_type: Literal["category", "span", "relation"],
+    ):
         """
         Given list of labels, set up labels for specified or active project
         """
@@ -119,13 +128,18 @@ class DoccanoSession:
 
         return labels
 
-    def load_document(self, text, metadata=None, project_id=None):
+    def load_document(
+        self, text, metadata: Dict[str, Any] | None = None, project_id: int | None = None
+    ):
         """
         Load a single document into specified project
         """
         project_id = project_id or self.current_project_id
         if not project_id:
             raise ValueError("No project ID specified or available")
+
+        if metadata is None:
+            metadata = {}
 
         try:
             example = self.client.create_example(
@@ -138,7 +152,7 @@ class DoccanoSession:
             print(f"Failed to load document: {e}")
             raise e
 
-    def get_labelled_samples(self, project_id=None):
+    def get_labelled_samples(self, project_id: int | None = None):
         """
         Streams text and associated labels as generator from specified or active project
         """
@@ -148,6 +162,8 @@ class DoccanoSession:
         label_map = self._get_label_map(project_id)
 
         for example in self.client.list_examples(project_id=project_id):
+            if example.id is None:
+                continue
             categories = list(
                 self.client.list_categories(project_id=project_id, example_id=example.id)
             )
