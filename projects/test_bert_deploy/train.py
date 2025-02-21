@@ -1,14 +1,14 @@
 import mlflow
-from mlflow.models import infer_signature
+import numpy as np
 from datasets import load_dataset
+from mlflow.models import infer_signature
+from sklearn.metrics import accuracy_score
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
-    TrainingArguments,
     Trainer,
+    TrainingArguments,
 )
-import numpy as np
-from sklearn.metrics import accuracy_score
 
 
 def load_and_prepare_data():
@@ -87,7 +87,7 @@ def main():
     print("Loaded and prepared data")
 
     # start mlflow run
-    with mlflow.start_run() as run:
+    with mlflow.start_run():
         # load model
         model, tokenizer = prepare_model_and_tokenizer()
         print("Prepared model and tokenizer")

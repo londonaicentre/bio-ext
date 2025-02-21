@@ -2,23 +2,23 @@
 # This script is adapted from the test script by https://github.com/sachua/mlflow-docker-compose
 
 import os
-import warnings
 import sys
-
-import pandas as pd
-import numpy as np
-from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import ElasticNet
+import warnings
 
 import mlflow
 import mlflow.sklearn
-
+import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
+from sklearn.linear_model import ElasticNet
+from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
+from sklearn.model_selection import train_test_split
+
 load_dotenv()
 
 # Override MinIO endpoint for local access
-os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://localhost:9000'
+os.environ["MLFLOW_S3_ENDPOINT_URL"] = "http://localhost:9000"
+
 
 def eval_metrics(actual, pred):
     rmse = np.sqrt(root_mean_squared_error(actual, pred))
@@ -26,11 +26,12 @@ def eval_metrics(actual, pred):
     r2 = r2_score(actual, pred)
     return rmse, mae, r2
 
+
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-    
+
     mlflow.set_tracking_uri("http://localhost:5000")
-    
+
     np.random.seed(40)
 
     data = pd.read_csv("data/wine-quality.csv")

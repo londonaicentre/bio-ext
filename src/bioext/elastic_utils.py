@@ -1,16 +1,25 @@
-import os
 import json
-from elasticsearch import Elasticsearch, helpers
-from elastic_transport import RequestsHttpNode
-import requests
+import os
 import random
+from typing import Any, Dict, Generator, Iterable
+
+import requests
+from elastic_transport import RequestsHttpNode, ObjectApiResponse
+from elasticsearch import Elasticsearch, helpers
 
 
 # thanks @LAdams for implementing required http proxy
 class GsttProxyNode(RequestsHttpNode):
+    """
+    Subclass of RequestsHttpNode that adds a proxy to the session when being used at GSTT.
+
+    Expects the http_proxy environment variable to be set or will raise a ValueError on
+    instantiation.
+    """
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.proxy_endpoint = os.getenv("http_proxy")
+        self.proxy_endpoint = os.environ["http_proxy"]
         self.session.proxies = {
             "http": self.proxy_endpoint,
             "https": self.proxy_endpoint,
@@ -18,9 +27,9 @@ class GsttProxyNode(RequestsHttpNode):
 
 
 class ElasticsearchSession:
-    def __init__(self, proxy=None, conn_mode: str = "HTTP"):
-        requests.packages.urllib3.disable_warnings(
-            requests.packages.urllib3.exceptions.InsecureRequestWarning
+    def __init__(self, proxy=None, conn_mode: str = "HTTP") -> None:
+        requests.packages.urllib3.disable_warnings(  # type: ignore
+            requests.packages.urllib3.exceptions.InsecureRequestWarning  # type: ignore
         )
 
         # set to GSTT server by default
@@ -29,16 +38,13 @@ class ElasticsearchSession:
         if proxy:
             self.proxy_node = GsttProxyNode
         else:
-            self.proxy_node = None
+            from elastic_transport import RequestsHttpNode
+
+            self.proxy_node = RequestsHttpNode
 
         if conn_mode == "API":
-            self.api_id = os.getenv("ELASTIC_API_ID")
-            self.api_key = os.getenv("ELASTIC_API_KEY")
-
-            if not all([self.api_id, self.api_key]):
-                raise ValueError(
-                    "Check that ELASTIC_API_ID and ELASTIC_API_KEY are in env variables"
-                )
+            self.api_id: str = os.environ["ELASTIC_API_ID"]
+            self.api_key: str = os.environ["ELASTIC_API_KEY"]
 
             self.es = Elasticsearch(
                 hosts=self.es_server,
@@ -49,13 +55,8 @@ class ElasticsearchSession:
             )
 
         elif conn_mode == "HTTP":
-            self.es_user = os.getenv("ELASTIC_USER")
-            self.es_pwd = os.getenv("ELASTIC_PWD")
-
-            if not all([self.es_user, self.es_pwd]):
-                raise ValueError(
-                    "Check ELASTIC_USER and ELASTIC_PWD are in env variables"
-                )
+            self.es_user: str = os.environ["ELASTIC_USER"]
+            self.es_pwd: str = os.environ["ELASTIC_PWD"]
 
             self.es = Elasticsearch(
                 hosts=self.es_server,
@@ -76,7 +77,7 @@ class ElasticsearchSession:
         #     "Could not connect with credentials provided"
         # )
 
-    def create_index(self, index_name, mappings, settings=None, overwrite=False):
+    def create_index(self, index_name, mappings, settings=None, overwrite=False) -> None:
         """
         Creates an index in Elasticsearch with option to overwrite existing one.
         Requires a config input (mappings) that describes fields, e.g.:
@@ -92,7 +93,7 @@ class ElasticsearchSession:
 
         if overwrite:
             # delete index if it exists
-            self.es.indices.delete(index=index_name, ignore=[400, 404])
+            self.es.indices.delete(index=index_name)
 
         self.es.indices.create(
             index=index_name,
@@ -100,26 +101,23 @@ class ElasticsearchSession:
                 "settings": settings,
                 "mappings": mappings,
             },
-            ignore=400,
         )
 
-    def list_indices(self):
+    def list_indices(self) -> ObjectApiResponse:
         return self.es.indices.get_alias(index="*")
 
-    def _yield_doc(self, data_file_path):
-        """Reads the file through csv.DictReader() and for each row
+    def _yield_doc(self, data_file_path) -> Generator[Any, Any, Any]:
+        """
+        Reads the file through csv.DictReader() and for each row
         yields a single document. This function is passed into the bulk()
         helper to create many documents in sequence.
         """
         # load json from data file
-        try:
-            with open(data_file_path, "r") as file:
-                data = json.load(file)
-                yield from data
-        except Exception as e:
-            print(f"Failed to load samples: {str(e)}")
+        with open(data_file_path, "r") as file:
+            data = json.load(file)
+            yield from data
 
-    def bulk_load_documents(self, index_name, documents, progress_callback=None):
+    def bulk_load_documents(self, index_name, documents, progress_callback=None) -> int:
         """
         Bulk load documents into Elasticsearch.
         """
@@ -129,7 +127,7 @@ class ElasticsearchSession:
                 yield doc
 
         successes = 0
-        for ok, action in helpers.streaming_bulk(
+        for ok, _action in helpers.streaming_bulk(
             client=self.es,
             index=index_name,
             actions=doc_generator(),
@@ -142,7 +140,7 @@ class ElasticsearchSession:
 
     def bulk_retrieve_documents(
         self, index_name, query, scroll="2m", save_to_file=None
-    ):
+    ) -> Iterable[Dict[str, Any]]:
         """
         Retrieve documents from Elasticsearch using scroll API
         """
@@ -169,7 +167,7 @@ class ElasticsearchSession:
 
         return docs
 
-    def get_random_doc_ids(self, index_name, size, query=None):
+    def get_random_doc_ids(self, index_name, size, query=None) -> list[Any]:
         """
         Get a random subset of document IDs from a given document index
         """
@@ -189,12 +187,8 @@ class ElasticsearchSession:
         # random sample
         return random.sample(all_ids, min(size, len(all_ids)))
 
-    def get_document_by_id(self, index_name, doc_id):
+    def get_document_by_id(self, index_name, doc_id) -> ObjectApiResponse:
         """
         Retrieve single document based on its ID
         """
-        try:
-            return self.es.get(index=index_name, id=doc_id)
-        except Exception as e:
-            print(f"Error retrieving document {doc_id}: {e}")
-            return None
+        return self.es.get(index=index_name, id=doc_id)
