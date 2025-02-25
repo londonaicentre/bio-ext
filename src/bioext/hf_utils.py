@@ -1,7 +1,8 @@
 import os
 from typing import Dict, List, Optional
 from dataclasses import dataclass
-from enum import Enum, auto
+# from enum import Enum, auto
+import torch
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -15,7 +16,12 @@ from transformers import (
 )
 from datasets import Dataset, DatasetDict
 import numpy as np
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, f1_score
+from sklearn.metrics import (
+    accuracy_score,
+    precision_recall_fscore_support,
+    f1_score,
+    confusion_matrix
+)
 
 """
 hf_utils.py
@@ -81,10 +87,10 @@ class HFTrainingConfig:
     warmup_ratio: float = 0.1
     optimizer_type: str = "adamw_torch"
     max_seq_length: int = 512
-    evaluation_strategy: str = "epoch"
+    eval_strategy: str = "epoch"
     save_strategy: str = "epoch"
     load_best_model_at_end: bool = True
-    metric_for_best_model: str = "f1"
+    metric_for_best_model: str = "macro_f1"
     greater_is_better: bool = True # where metric_for_best_model is not a loss
     fp16: bool = False # default train sin 32bit
 
@@ -96,6 +102,7 @@ class HFSequenceClassificationTrainer:
 
     def __init__(self, config: HFTrainingConfig):
         self.config = config
+        self.device = self._choose_device()
         self.tokenizer = AutoTokenizer.from_pretrained(
             config.tokenizer_name or config.model_name,
             use_fast=True,
@@ -106,11 +113,27 @@ class HFSequenceClassificationTrainer:
             num_labels=config.num_labels,
             problem_type=config.problem_type
         )
+        self.model.to(self.device)
         self.trainer = None
+
+    def _choose_device(self):
+        """
+        Chooses the best available device for training: CUDA, MPS, or CPU (in order of preference)
+
+        Returns:
+            torch.device: Selected device
+        """
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        elif torch.backends.mps.is_available():
+            return torch.device("mps")
+        else:
+            return torch.device("cpu")
 
     def tokenize_data(self, dataset: Dataset, text_column: str, label_column: str) -> Dataset:
         """
         Apply tokenisation to dataset
+        Dataset is a HF class optimised for NLP tasks
 
         Args:
             dataset:
@@ -145,7 +168,9 @@ class HFSequenceClassificationTrainer:
 
     def compute_metrics(self, eval_pred: EvalPrediction) -> Dict[str, float]:
         """
-        Compute metrics for classification
+        Compute metrics for classification evaluation task
+        Note that EvalPrediction is a default HF data structure, produced silently by Trainer
+        This contains the output of Trainer, with predictions (logits) and label_ids (ground truth labels)
         """
         predictions = eval_pred.predictions
         labels = eval_pred.label_ids
@@ -155,25 +180,59 @@ class HFSequenceClassificationTrainer:
             predictions = 1 / (1 + np.exp(-predictions))
             predictions = (predictions > self.config.threshold).astype(int)
             accuracy = accuracy_score(labels, predictions)
-            f1 = f1_score(labels, predictions, average='micro')
-
-            return {
+            precision, recall, f1, _ = precision_recall_fscore_support(
+                labels, predictions, average='micro', zero_division=0
+            )
+            macro_precision, macro_recall, macro_f1, _ = precision_recall_fscore_support(
+                labels, predictions, average='macro', zero_division=0
+            )
+            metrics_dict = {
                 'accuracy': accuracy,
-                'f1': f1
+                'micro_precision': precision,
+                'micro_recall': recall,
+                'micro_f1': f1,
+                'macro_precision': macro_precision,
+                'macro_recall': macro_recall,
+                'macro_f1': macro_f1,
             }
+
+            return metrics_dict
+
         else:
             # binary/multi-class classification
             predictions = np.argmax(predictions, axis=1)
-            precision, recall, f1, _ = precision_recall_fscore_support(
+            accuracy = accuracy_score(labels, predictions)
+
+            # weighted metrics for imbalanced classes)
+            weighted_precision, weighted_recall, weighted_f1, _ = precision_recall_fscore_support(
                 labels, predictions, average='weighted', zero_division=0
             )
-            acc = accuracy_score(labels, predictions)
+
+            #  macro metrics / unweighted average across classes
+            macro_precision, macro_recall, macro_f1, _ = precision_recall_fscore_support(
+                labels, predictions, average='macro', zero_division=0
+            )
+
+            # get confusion matrix
+            if self.config.num_labels <= 10:
+                conf_matrix = confusion_matrix(labels, predictions)
+                conf_matrix_dict = {
+                    f"cm_{i}_{j}": float(conf_matrix[i][j])
+                    for i in range(conf_matrix.shape[0])
+                    for j in range(conf_matrix.shape[1])
+                }
+            else:
+                conf_matrix_dict = {}
 
             return {
-                'accuracy': acc,
-                'precision': precision,
-                'recall': recall,
-                'f1': f1
+                'accuracy': accuracy,
+                'weighted_precision': weighted_precision,
+                'weighted_recall': weighted_recall,
+                'weighted_f1': weighted_f1,
+                'macro_precision': macro_precision,
+                'macro_recall': macro_recall,
+                'macro_f1': macro_f1,
+                **conf_matrix_dict
             }
 
     def setup_trainer(
@@ -194,10 +253,10 @@ class HFSequenceClassificationTrainer:
             num_train_epochs=self.config.num_train_epochs,
             weight_decay=self.config.weight_decay,
             warmup_ratio=self.config.warmup_ratio,
-            evaluation_strategy=self.config.evaluation_strategy,
+            eval_strategy=self.config.eval_strategy,
             save_strategy=self.config.save_strategy,
             load_best_model_at_end=True,
-            metric_for_best_model=self.config.metric_for_best_model,
+            metric_for_best_model=("eval_" + self.config.metric_for_best_model), # trainer automatically prefixes metrics with eval_
             greater_is_better=self.config.greater_is_better,
         )
 
@@ -206,8 +265,8 @@ class HFSequenceClassificationTrainer:
             args=training_args,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            tokenizer=self.tokenizer,
-            compute_metrics=self.compute_metrics
+            #tokenizer=self.tokenizer, # deprecated
+            compute_metrics=self.compute_metrics # callback per eval strategy (default by epoch)
         )
 
         return self.trainer
@@ -215,6 +274,7 @@ class HFSequenceClassificationTrainer:
     def train(self) -> Dict[str, float]:
         """
         Run training and return metrics
+        Placeholder before pipeline and MLFlow class
         """
         if self.trainer is None:
             raise ValueError("Trainer not set up. Call setup_trainer first.")
@@ -223,7 +283,7 @@ class HFSequenceClassificationTrainer:
         self.trainer.save_model()
         self.tokenizer.save_pretrained(self.config.output_dir)
 
-        return train_result.metrics
+        return train_result.metrics # training statistics
 
     ### accessors
 
