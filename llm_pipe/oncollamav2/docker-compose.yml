@@ -1,0 +1,27 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: ${CONTAINER_NAME}
+    runtime: nvidia
+    ipc: host
+    ports:
+      - "${PORT}:8000"
+    volumes:
+      - ${MODEL_PATH}:/model
+    command: >
+      --model /model
+      --dtype bfloat16
+      --gpu-memory-utilization ${GPU_MEM_UTIL}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - bioext_network
+
+networks:
+  bioext_network:
+    external: true
