@@ -42,6 +42,9 @@ services:
         condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION}
     container_name: kibana_settings
+    environment:
+      - no_proxy=elasticsearch,bioextelastic,localhost,127.0.0.1,.bioext_network
+      - NO_PROXY=elasticsearch,bioextelastic,localhost,127.0.0.1,.bioext_network
     networks:
       - bioext_network
     restart: 'no'
@@ -76,6 +79,8 @@ services:
       - TELEMETRY_ENABLED=false
       - XPACK_REPORTING_ENABLED=false
       - XPACK_GRAPH_ENABLED=false
+      - no_proxy=elasticsearch,bioextelastic,localhost,127.0.0.1,.bioext_network
+      - NO_PROXY=elasticsearch,bioextelastic,localhost,127.0.0.1,.bioext_network
     healthcheck:
       test:
         [
@@ -175,10 +180,10 @@ services:
       - no_proxy=bioextminio,localhost,127.0.0.1,.bioext_network
       - NO_PROXY=bioextminio,localhost,127.0.0.1,.bioext_network
     command: >
-      mlflow server --host 0.0.0.0 --port 5001 
-      --backend-store-uri sqlite:///mlflow/data/mlflow.db 
-      --artifacts-destination s3://mlflow-artifacts 
-      --serve-artifacts 
+      mlflow server --host 0.0.0.0 --port 5001
+      --backend-store-uri sqlite:///mlflow/data/mlflow.db
+      --artifacts-destination s3://mlflow-artifacts
+      --serve-artifacts
       --gunicorn-opts "--timeout 3600 --workers 4 --threads 8 --worker-class gthread --worker-connections 1000"
     depends_on:
       - minio
