@@ -19,10 +19,7 @@ from mlflow.tracking import MlflowClient
 from mlflow.models import infer_signature
 
 from dotenv import load_dotenv
-load_dotenv()
-
-# Override MinIO endpoint for local access
-os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'http://localhost:9000'
+load_dotenv(override=True)
 
 def create_dummy_data(n_samples=10000):
     np.random.seed(42)
@@ -54,7 +51,7 @@ def create_dummy_data(n_samples=10000):
 def mlflow_logistic_regression():
     warnings.filterwarnings("ignore")
     
-    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_tracking_uri("http://bioextmlflow:5001")
     # mlflow.set_experiment("test_logreg_w_h_g")
 
     df = create_dummy_data()
