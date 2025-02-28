@@ -1,9 +1,11 @@
-import os
 import json
-from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
-from elasticsearch import helpers
+import os
 
 from dotenv import load_dotenv
+from elasticsearch import helpers
+
+from bioext.elastic_utils import ElasticsearchSession
+
 load_dotenv()
 
 project_name = "breast_brca_status"
@@ -19,7 +21,7 @@ query = {
         "bool": {
             "must": [
                 {"wildcard": {"document_Content": "*brca*"}},
-                {"wildcard": {"document_Content": "*breast*"}}
+                {"wildcard": {"document_Content": "*breast*"}},
             ]
         }
     }
@@ -29,18 +31,18 @@ try:
     results = helpers.scan(
         client=es_session.es,
         query=query,
-        scroll='2m',
-        index="gstt_clinical_geneworks_documents"
+        scroll="2m",
+        index="gstt_clinical_geneworks_documents",
     )
 
     processed_count = 0
     for hit in results:
-        doc_id = hit['_id']
+        doc_id = hit["_id"]
         file_path = os.path.join(project_dir, f"{doc_id}.json")
-        
-        with open(file_path, 'w') as f:
+
+        with open(file_path, "w") as f:
             json.dump(hit, f, indent=2)
-        
+
         processed_count += 1
         if processed_count % 1000 == 0:
             print(f"Up to {processed_count} docs...")

@@ -1,22 +1,21 @@
 # The data set used in this example is from http://archive.ics.uci.edu/ml/datasets/Wine+Quality
 # This script is adapted from the test script by https://github.com/sachua/mlflow-docker-compose
 
-import os
-import warnings
 import sys
-import requests
-
-import pandas as pd
-import numpy as np
-from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import ElasticNet
+import warnings
 
 import mlflow
 import mlflow.sklearn
-
+import numpy as np
+import pandas as pd
+import requests
 from dotenv import load_dotenv
+from sklearn.linear_model import ElasticNet
+from sklearn.metrics import mean_absolute_error, r2_score, root_mean_squared_error
+from sklearn.model_selection import train_test_split
+
 load_dotenv(override=True)
+
 
 def eval_metrics(actual, pred):
     rmse = np.sqrt(root_mean_squared_error(actual, pred))
@@ -24,12 +23,13 @@ def eval_metrics(actual, pred):
     r2 = r2_score(actual, pred)
     return rmse, mae, r2
 
+
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
-    
+
     print("setting mlflow tracking url")
     mlflow.set_tracking_uri("http://bioextmlflow:5001")
-    
+
     np.random.seed(40)
 
     data = pd.read_csv("data/wine-quality.csv")
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     alpha = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
     l1_ratio = float(sys.argv[2]) if len(sys.argv) > 2 else 0.5
 
-    status = requests.get('http://bioextmlflow:5001', timeout=5).status_code
+    status = requests.get("http://bioextmlflow:5001", timeout=5).status_code
     print(status)
 
     print("starting run")
