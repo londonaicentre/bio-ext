@@ -1,0 +1,1 @@
+# On-going audit of the GSTT elastic database, including exact queries for extracting document types
