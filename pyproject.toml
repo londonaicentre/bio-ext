@@ -5,6 +5,7 @@ description = "Helper functions for bio-ext pipelines"
 authors = [
     { name = "Joe Zhang", email = "joe.zhang@gstt.nhs.uk" },
     { name = "Lawrence Adams", email = "lawrence.adams@gstt.nhs.uk" },
+    { name = "Sophie Ratkai", email = "sophie.ratkai@gstt.nhs.uk" },
 ]
 readme = "README.md"
 requires-python = ">=3.11.2"
@@ -12,6 +13,7 @@ dependencies = [
     "mlflow[extras]",
     "boto3",
     "requests",
+    "evaluate",
     "elasticsearch",
     "elasticsearch-dsl",
     "elastic-transport",
