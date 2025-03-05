@@ -25,7 +25,7 @@ class ElasticsearchSession:
         )
 
         # set to GSTT server by default
-        self.es_server = os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01:9200")
+        self.es_server = os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01.gstt.local:9200")
 
         if proxy:
             self.proxy_node = GsttProxyNode
