@@ -1,6 +1,7 @@
 import json
 import os
 import random
+from typing import Optional, Literal
 
 import requests
 from elastic_transport import RequestsHttpNode
@@ -19,7 +20,24 @@ class GsttProxyNode(RequestsHttpNode):
 
 
 class ElasticsearchSession:
-    def __init__(self, proxy=None, conn_mode: str = "HTTP"):
+    def __init__(
+        self,
+        proxy: Optional[RequestsHttpNode] = None,
+        conn_mode: Optional[Literal["HTTP"] | Literal["API"]] = "HTTP",
+    ) -> None:
+        """
+        Instantiates ElasticsearchSession for use across bio-ext, with flexibility to add 
+        Proxy Settings or connection modes.
+
+        Note that although the ElasticsearchSession may be created, it will not validate the 
+        connection. This can be achieved with `<session>.es.info()` for example.
+
+        Args:
+            proxy: Optional RequestsHttpNode that enables use of HTTP Proxies if required. By 
+                default is not enabled.
+            conn_mode: By default uses HTTP mode which is widely deprecated; API mode is 
+                other option which uses different environment varaibles.
+        """
         requests.packages.urllib3.disable_warnings(
             requests.packages.urllib3.exceptions.InsecureRequestWarning
         )
@@ -27,10 +45,8 @@ class ElasticsearchSession:
         # set to GSTT server by default
         self.es_server = os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01:9200")
 
-        if proxy:
-            self.proxy_node = GsttProxyNode
-        else:
-            self.proxy_node = None
+        # Use optional proxy node (useful if running in Proxied Environment)
+        self.proxy_node = proxy
 
         if conn_mode == "API":
             self.api_id = os.getenv("ELASTIC_API_ID")
@@ -71,11 +87,6 @@ class ElasticsearchSession:
 
         else:
             raise ValueError("Argument conn_mode must be 'HTTP' or 'API'")
-
-        # Ensure that connection can actually be made with the creds provided
-        # assert self.es.ping() is True, print(
-        #     "Could not connect with credentials provided"
-        # )
 
     def create_index(self, index_name, mappings, settings=None, overwrite=False):
         """
