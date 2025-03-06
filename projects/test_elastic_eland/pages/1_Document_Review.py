@@ -1,6 +1,6 @@
 import streamlit as st
 import eland
-import numpy as np
+import pandas as pd
 import json
 from dotenv import load_dotenv
 from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
@@ -11,20 +11,31 @@ if st.session_state.get("query") is None:
     st.warning("No query defined.")
     st.stop()
 
-st.json(st.session_state["query"])
+refresh_btn = st.button("Randomise")
+
+if refresh_btn:
+    st.rerun()
 
 load_dotenv()
 
 es_session = ElasticsearchSession(proxy=GsttProxyNode, conn_mode="API")
 
-df = (
-    eland.DataFrame(
-        es_session.es,
-        st.session_state.selected_index,
-        columns=["document_Content"],
-    )
-    .es_query(st.session_state.get("query"))
-    .sample(10)
-)
+query_object = {
+    "size": 10,
+    "_source": ["_id", "document_Content"],
+    "query": {
+        "function_score": {
+            "query": 
+st.session_state.query
+        ,
+            "random_score": {},
+        },
+    },
+}
 
-st.dataframe(df)
+res = es_session.es.search(index=st.session_state.selected_index, body=query_object)
+
+df =pd.DataFrame( res["hits"]["hits"])
+df['document_Content'] = df['_source'].str['document_Content']
+print(df.columns)
+st.dataframe(df[['_id', 'document_Content']])

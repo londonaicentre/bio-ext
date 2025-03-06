@@ -8,9 +8,8 @@ import plotly.express as ex
 import utils
 
 DEFAULT_QUERY_STRING = """
-{"query": {"bool": {"must": [{"wildcard": {"document_Content": "*brca*"}}]}}}
+{"bool": {"must": [{"wildcard": {"document_Content": "*brca*"}}]}}
 """
-QUERY_COLUMNS = ["document_CreatedWhen", "patient_NhsNumber", "patient_Age"]
 
 load_dotenv()
 
@@ -48,62 +47,43 @@ submit_btn = st.button(
 )
 
 if submit_btn:
-    st.json(input_query)
     query_object = json.loads(input_query)
-
-    df = eland.DataFrame(
-        es_session.es,
-        st.session_state.selected_index,
-        columns=QUERY_COLUMNS,
-    )
-
-    res = df.es_query(
-        query_object,
-    )
-
-    st.write(f"Got: {len(res):,} results.")
-
-    res = res.to_pandas(show_progress=True)
-
-    to_plot = (
-        res["document_CreatedWhen"]
-        .dt.date.value_counts()
-        .rename_axis("date")
-        .reset_index(name="count")
-        .sort_values("date")
-    )
-
-    line_chart_date = ex.line(to_plot, x="date", y="count")
-
-    st.plotly_chart(line_chart_date)
-
-    age_distrib = (
-        res.patient_Age.apply(np.floor)
-        .value_counts()
-        .rename_axis("age_at_event")
-        .reset_index(name="count")
-        .sort_values("age_at_event")
-    )
-
-    st.dataframe(to_plot)
-
-    age_distrib_plot = ex.histogram(age_distrib, x="age_at_event", y="count")
-
-    st.plotly_chart(age_distrib_plot)
-
-    nhs_number_count = (
-        res.patient_NhsNumber.value_counts()
-        .reset_index(name="count")
-        .value_counts()
-        .reset_index(name="count_agg")
-    )
-
-    nhs_number_count_plot = ex.histogram(
-        nhs_number_count, x="count", y="count_agg"
-    ).update_layout(xaxis_title="Number of NHS Counts", yaxis_title="Density")
-
-    st.plotly_chart(nhs_number_count_plot)
-
     st.session_state["query"] = query_object
 
-    st.link_button("Review Documents", "./Document_Review")
+    documents_count= utils.get_number_of_results(query=query_object, index=index_select_widget, session=es_session.es)['count']
+
+    st.write(f"Returned **{documents_count}** documents")
+
+    if documents_count == 0:
+        st.warning("No results found.")
+        st.stop()
+
+    # Plot Event Activity Date
+    st.subheader("Result Frequency by Date")
+    activity_time = utils.aggregate_by_date(
+        query_object, index_select_widget, "activity_Date", es_session.es
+    )
+    activity_time_plot = ex.line(activity_time, x="date", y="count")
+    st.plotly_chart(activity_time_plot)
+
+    # NHS Number Data Frequency
+    st.subheader("Count Frequency by Patient (with NHS Number)")
+    nhs_number_frequency = utils.aggregate_by_nhs_numbers(
+        query_object, index_select_widget, es_session.es
+    )
+    nhs_number_frequency_plot = ex.line(
+        nhs_number_frequency, x="Count Frequency", y="Density", log_x=True
+    ).update_layout(
+        xaxis_title="Count per Patient"
+    )
+    st.plotly_chart(nhs_number_frequency_plot)
+
+    # Age Density
+    st.subheader("Patient age at Event")
+    age_at_event = utils.aggregate_by_event_age(
+        query_object, index_select_widget, es_session.es
+    )
+    age_at_event_plot = ex.histogram(age_at_event, x="age", y="count")
+    st.plotly_chart(age_at_event_plot)
+
+    
