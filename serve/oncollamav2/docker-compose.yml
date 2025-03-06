@@ -11,7 +11,16 @@ services:
     command: >
       --model /model
       --dtype bfloat16
-      --gpu-memory-utilization ${GPU_MEM_UTIL}
+      --gpu-memory-utilization 0.95
+      --swap-space 8
+      --enable-prefix-caching
+      --enforce-eager
+      --tensor-parallel-size 1
+      --max-num-seqs 1
+      --max-num-batched-tokens 12000
+      --max-model-len 12000
+      --disable-continuous-batching
+      --block-size 16
     deploy:
       resources:
         reservations:
