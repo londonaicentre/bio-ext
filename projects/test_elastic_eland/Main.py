@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import numpy as np
 import json
 import plotly.express as ex
+import utils
 
 DEFAULT_QUERY_STRING = """
 {"query": {"bool": {"must": [{"wildcard": {"document_Content": "*brca*"}}]}}}
@@ -20,13 +21,17 @@ indices = list(es_session.list_indices().keys())
 if "selected_index" not in st.session_state:
     st.session_state.selected_index = None
 
+
 def update_index():
     st.session_state.selected_index = indices[0] = st.session_state.index_widget
+
 
 index_select_widget = st.selectbox(
     "Elastic Index",
     indices,
-    index=indices.index(st.session_state.selected_index) if st.session_state.selected_index in indices else None,
+    index=indices.index(st.session_state.selected_index)
+    if st.session_state.selected_index in indices
+    else None,
     on_change=update_index,
     key="index_widget",
     placeholder="Select index",
@@ -38,7 +43,9 @@ input_query = st.text_area("Query as JSON", value=DEFAULT_QUERY_STRING)
 
 print(st.session_state.selected_index)
 
-submit_btn = st.button("Submit", disabled=True if st.session_state.selected_index is None else False)
+submit_btn = st.button(
+    "Submit", disabled=True if st.session_state.selected_index is None else False
+)
 
 if submit_btn:
     st.json(input_query)
