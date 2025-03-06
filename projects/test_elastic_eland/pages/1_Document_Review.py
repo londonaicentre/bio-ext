@@ -1,7 +1,5 @@
 import streamlit as st
-import eland
 import pandas as pd
-import json
 from dotenv import load_dotenv
 from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
 
@@ -25,9 +23,7 @@ query_object = {
     "_source": ["_id", "document_Content"],
     "query": {
         "function_score": {
-            "query": 
-st.session_state.query
-        ,
+            "query": st.session_state.query,
             "random_score": {},
         },
     },
@@ -35,7 +31,7 @@ st.session_state.query
 
 res = es_session.es.search(index=st.session_state.selected_index, body=query_object)
 
-df =pd.DataFrame( res["hits"]["hits"])
-df['document_Content'] = df['_source'].str['document_Content']
-print(df.columns)
-st.dataframe(df[['_id', 'document_Content']])
+df = pd.DataFrame(res["hits"]["hits"])
+df["document_Content"] = df["_source"].str["document_Content"]
+
+st.dataframe(df[["_id", "document_Content"]])

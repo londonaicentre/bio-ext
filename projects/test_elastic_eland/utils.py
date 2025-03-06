@@ -26,7 +26,6 @@ def aggregate_by_date(
     res = session.search(index=index, body=query_object)
 
     df = pd.DataFrame(res["aggregations"]["amount_per_month"]["buckets"])
-    print(df.keys())
 
     df["date"] = pd.to_datetime(df["key_as_string"], format="%Y-%m")
 
@@ -85,13 +84,10 @@ def aggregate_by_event_age(
     df = df.rename({"doc_count": "count"}, axis="columns")
     df["age"] = df["key"].astype(int)
 
-    print(df)
-
     return df[["age", "count"]]
 
-def get_number_of_results(query: dict,
-    index: str,
-    session: Elasticsearch) -> int:
+
+def get_number_of_results(query: dict, index: str, session: Elasticsearch) -> int:
     query_object = {
         "query": query,
     }

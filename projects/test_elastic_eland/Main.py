@@ -1,8 +1,6 @@
 import streamlit as st
-import eland
 from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
 from dotenv import load_dotenv
-import numpy as np
 import json
 import plotly.express as ex
 import utils
@@ -40,8 +38,6 @@ st.title("Rapid Query Feasibility Search")
 
 input_query = st.text_area("Query as JSON", value=DEFAULT_QUERY_STRING)
 
-print(st.session_state.selected_index)
-
 submit_btn = st.button(
     "Submit", disabled=True if st.session_state.selected_index is None else False
 )
@@ -50,7 +46,9 @@ if submit_btn:
     query_object = json.loads(input_query)
     st.session_state["query"] = query_object
 
-    documents_count= utils.get_number_of_results(query=query_object, index=index_select_widget, session=es_session.es)['count']
+    documents_count = utils.get_number_of_results(
+        query=query_object, index=index_select_widget, session=es_session.es
+    )["count"]
 
     st.write(f"Returned **{documents_count}** documents")
 
@@ -73,9 +71,7 @@ if submit_btn:
     )
     nhs_number_frequency_plot = ex.line(
         nhs_number_frequency, x="Count Frequency", y="Density", log_x=True
-    ).update_layout(
-        xaxis_title="Count per Patient"
-    )
+    ).update_layout(xaxis_title="Count per Patient")
     st.plotly_chart(nhs_number_frequency_plot)
 
     # Age Density
@@ -85,5 +81,3 @@ if submit_btn:
     )
     age_at_event_plot = ex.histogram(age_at_event, x="age", y="count")
     st.plotly_chart(age_at_event_plot)
-
-    

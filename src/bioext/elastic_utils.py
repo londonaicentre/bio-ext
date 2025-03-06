@@ -26,16 +26,16 @@ class ElasticsearchSession:
         conn_mode: Optional[Literal["HTTP"] | Literal["API"]] = "HTTP",
     ) -> None:
         """
-        Instantiates ElasticsearchSession for use across bio-ext, with flexibility to add 
+        Instantiates ElasticsearchSession for use across bio-ext, with flexibility to add
         Proxy Settings or connection modes.
 
-        Note that although the ElasticsearchSession may be created, it will not validate the 
+        Note that although the ElasticsearchSession may be created, it will not validate the
         connection. This can be achieved with `<session>.es.info()` for example.
 
         Args:
-            proxy: Optional RequestsHttpNode that enables use of HTTP Proxies if required. By 
+            proxy: Optional RequestsHttpNode that enables use of HTTP Proxies if required. By
                 default is not enabled.
-            conn_mode: By default uses HTTP mode which is widely deprecated; API mode is 
+            conn_mode: By default uses HTTP mode which is widely deprecated; API mode is
                 other option which uses different environment varaibles.
         """
         requests.packages.urllib3.disable_warnings(
