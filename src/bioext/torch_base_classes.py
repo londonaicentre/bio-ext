@@ -43,6 +43,7 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version, send_example_telemetry
+from transformers.utils import logging as tu_log
 from transformers.utils.versions import require_version
 
 
@@ -225,6 +226,7 @@ class DataTrainingArguments:
             assert train_extension in [
                 "csv",
                 "json",
+                "jsonl",
             ], "`train_file` should be a csv or a json file."
             validation_extension = self.validation_file.split(".")[-1]
             assert (
@@ -332,8 +334,8 @@ def main():
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
-    # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
-    # information sent is the one passed as arguments along with your Python/PyTorch versions.
+    # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them.
+    # The information sent is the one passed as arguments along with your Python/PyTorch versions.
     send_example_telemetry("run_classification", model_args, data_args)
 
     # Setup logging
@@ -345,14 +347,14 @@ def main():
 
     if training_args.should_log:
         # The default of training_args.log_level is passive, so we set log level at info here to have that default.
-        transformers.utils.logging.set_verbosity_info()
+        tu_log.set_verbosity_info()
 
     log_level = training_args.get_process_log_level()
     logger.setLevel(log_level)
     datasets.utils.logging.set_verbosity(log_level)
-    transformers.utils.logging.set_verbosity(log_level)
-    transformers.utils.logging.enable_default_handler()
-    transformers.utils.logging.enable_explicit_format()
+    tu_log.set_verbosity(log_level)
+    tu_log.enable_default_handler()
+    tu_log.enable_explicit_format()
 
     # Log on each process the small summary:
     logger.warning(
@@ -602,7 +604,7 @@ def main():
         # We will pad later, dynamically at batch creation, to the max sequence length in each batch
         padding = False
 
-    # for training ,we will update the config with label infos,
+    # for training, we will update the config with label infos,
     # if do_train is not set, we will use the label infos in the config
     if training_args.do_train and not is_regression:  # classification, training
         label_to_id = {v: i for i, v in enumerate(label_list)}
