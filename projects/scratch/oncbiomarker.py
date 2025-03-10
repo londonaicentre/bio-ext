@@ -1,5 +1,6 @@
 import pandas as pd
 from collections import Counter
+import json
 
 sheets_dict = pd.read_excel(
     "data/cancer-national-genomic-test-drectory-V11-January-2025.xlsx",
@@ -40,3 +41,8 @@ counts = Counter(genes)
 
 unique_genes = list(set(genes))
 # 71
+
+
+# Save the list to a file
+with open("genes.json", "w") as f:
+    json.dump(unique_genes, f)

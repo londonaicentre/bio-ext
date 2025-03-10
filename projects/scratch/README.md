@@ -33,3 +33,9 @@ Queries will be saved in `sde_aic_internal_docs/nlp/gstt_elastic_directory.md`
 ## Other solutsions
 
 Other people have been attempting similar solution. See here by [Qgenomeapp](https://qgenome.co.uk/)
+
+
+## What does the script do
+
+`oncbiomarker.py` will essentially generate a unique strings of biomarkers.  It is a work in progress.
+Future iterations will include paediatric tumours and haematological, currently only for solid tumours
