@@ -72,10 +72,30 @@ source2 = (
     "https://www.cancer.gov/about-cancer/diagnosis-staging/diagnosis/tumor-markers-list"
 )
 
+
 response = requests.get(source2)
 soup = BeautifulSoup(response.content, "html.parser")
 
+results = []
 
+
+gene_tags = soup.find_all("strong")
+
+for gene in gene_tags:
+    results.append(gene.get_text())
+
+
+results = list(set(results))
+
+
+source3 = "https://www.accc-cancer.org/home/learn/precision-medicine/cancer-diagnostics/biomarkers/biomarkerlive/lexicon/cancer-biomarkers#B"
+
+response3 = requests.get(source3)
+soup3 = BeautifulSoup(response3.content, "html.parser")
+
+markers = soup3.find_all("div", class_="marker")
+
+marker
 # Save the list to a file
 with open("genes.json", "w") as f:
     json.dump(unique_genes, f)
