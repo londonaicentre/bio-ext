@@ -90,16 +90,17 @@ def generate_unique_biomarkers(receptacle, listobject, label):
 
 # DATA SOURCES
 
-sheets_dict = pd.read_excel(
-    "data/cancer-national-genomic-test-drectory-V11-January-2025.xlsx",
-    engine="openpyxl",
-    sheet_name=None,
-)
-
 source_links = [
+    "https://www.england.nhs.uk/wp-content/uploads/2018/08/cancer-national-genomic-test-drectory-V11-January-2025.xlsx",
     "https://www.cancer.gov/about-cancer/diagnosis-staging/diagnosis/tumor-markers-list",
     "https://www.accc-cancer.org/home/learn/precision-medicine/cancer-diagnostics/biomarkers/biomarkerlive/lexicon/cancer-biomarkers#B",
 ]
+
+sheets_dict = pd.read_excel(
+    io=source_links[0],
+    engine="openpyxl",
+    sheet_name=None,
+)
 
 ##########
 # TASK1: working on SOURCE 1 : UK NHS
