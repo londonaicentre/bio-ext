@@ -37,5 +37,8 @@ Other people have been attempting similar solution. See here by [Qgenomeapp](htt
 
 ## What does the script do
 
-`oncbiomarker.py` will essentially generate a unique strings of biomarkers.  It is a work in progress.
-Future iterations will include paediatric tumours and haematological, currently only for solid tumours
+* `oncbiomarker.py` will ingest 3 data sources 1,2 and 3.
+* source 4 is now down.
+* It will then write 4 csv files in `data/output`
+* The files are one for each data source with a bit more columns unique to each source. These are useful for downstream NLP tasks
+* Then one final `canonical_combined_unique_genes.csv` which includes all the 3 sources concatenated.
