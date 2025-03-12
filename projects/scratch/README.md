@@ -37,7 +37,7 @@ Other people have been attempting similar solution. See here by [Qgenomeapp](htt
 
 ## What does the scripts do
 
-* `oncbiomarker.py` will ingest 3 data sources 1,2 and 3.
+* `generate_canon_biomarkers.py` will ingest 3 data sources 1,2 and 3.
 * source 4 is now down and not available.
 * It can be called as a python module and `test.py` file tests this.
 * It can be called as a script from command line in which case the outputs will be saved to a directory `data/output` at the moment. 
