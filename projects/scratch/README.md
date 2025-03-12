@@ -35,10 +35,13 @@ Queries will be saved in `sde_aic_internal_docs/nlp/gstt_elastic_directory.md`
 Other people have been attempting similar solution. See here by [Qgenomeapp](https://qgenome.co.uk/)
 
 
-## What does the script do
+## What does the scripts do
 
 * `oncbiomarker.py` will ingest 3 data sources 1,2 and 3.
-* source 4 is now down.
-* It will then write 4 csv files in `data/output`
+* source 4 is now down and not available.
+* It can be called as a python module and `test.py` file tests this.
+* It can be called as a script from command line in which case the outputs will be saved to a directory `data/output` at the moment. 
+* NOTE: Future feature to give user added functionality about saving location and naming the files. 
+
 * The files are one for each data source with a bit more columns unique to each source. These are useful for downstream NLP tasks
 * Then one final `canonical_combined_unique_genes.csv` which includes all the 3 sources concatenated.
