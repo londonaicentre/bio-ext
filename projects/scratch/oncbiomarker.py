@@ -6,7 +6,7 @@ import numpy as np
 import re
 import requests
 from bs4 import BeautifulSoup
-
+import os
 
 # FUNCTIONS
 
@@ -87,6 +87,25 @@ def generate_unique_biomarkers(receptacle, listobject, label):
     receptacle["source"].append(label)
     return unique
 
+def save_to_local(destination):
+    "simple function that resolves directory issues and saves locally"
+    dest = os.path.dirname(destination)
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+        print(f"new directory created as {dest}")
+    else:
+        pass
+    filenameslist = ["canonical_uk_nhs_genes.csv","canonical_usa_nih_genes.csv","canonical_usa_acc_genes.csv","canonical_combined_unique_genes.csv"]
+    pathslist = [os.path.join(destination,filename) for filename in filenameslist]
+    df_unique.to_csv(pathslist[0])
+    df_nih.to_csv(pathslist[1])
+    df_acc.to_csv(pathslist[2])
+    print("non-unique-csv's written")
+    all_unique_df.to_csv(pathslist[3])
+    print("unique-csv is also written.")
+    
+    
+    
 
 # DATA SOURCES
 
@@ -101,6 +120,11 @@ sheets_dict = pd.read_excel(
     engine="openpyxl",
     sheet_name=None,
 )
+
+# OUTPUT DESTINATION
+
+outputpath = "data/output/"
+
 
 ##########
 # TASK1: working on SOURCE 1 : UK NHS
@@ -325,15 +349,7 @@ for m in markers:
 df_acc = pd.DataFrame(result3)
 df_acc = df_acc.assign(source="usa_acc")
 
-
-# WRITES OUTPUTS
-## OUTPUT1 :
-df_unique.to_csv("data/output/canonical_uk_nhs_genes.csv")
-df_nih.to_csv("data/output/canonical_usa_nih_genes.csv")
-df_acc.to_csv("data/output/canonical_usa_acc_genes.csv")
-print("all dataframes written.")
-
-## OUTPUT 2:
+# MAKE A UNIQUE GENE NAMES ONLY CSV
 all_unique_df = pd.concat(
     [
         df_unique[["biomarker", "source"]],
@@ -344,5 +360,7 @@ all_unique_df = pd.concat(
 all_unique_df = all_unique_df.reset_index(drop=True)
 all_unique_df = all_unique_df.drop_duplicates(subset="biomarker")
 all_unique_df = all_unique_df.reset_index(drop=True)
-all_unique_df.to_csv("data/output/canonical_combined_unique_genes.csv")
-print("unique biomarkers complete")
+
+# SAVES OUTPUTS
+
+save_to_local(outputpath)
