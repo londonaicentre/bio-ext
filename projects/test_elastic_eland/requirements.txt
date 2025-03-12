@@ -1,3 +1,5 @@
 -e ../../
 pandas
 python-dotenv
+plotly
+streamlit
