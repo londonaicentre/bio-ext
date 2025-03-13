@@ -1,79 +1,57 @@
-from datasets import Dataset, DatasetDict, load_dataset
-from transformers import (
-    AutoTokenizer,
-)
-from bioext.doccano_utils import DoccanoSession, save_labelled_docs
-import numpy as np
-import pandas as pd
+import os
+import zipfile
+from datetime import datetime
+from datasets import load_dataset
+from transformers import AutoTokenizer
+from bioext.doccano_utils import DoccanoSession
 from dotenv import load_dotenv
 
 # Load credentials from env file
 load_dotenv()
 
-# Declare constants TODO: should refactor in config file
-DATA_PATH = "data/breast_brca_labelled.json"
-FRAC = 1
-RANDOM_STATE = 42
-TRAIN_TEST_SPLITPERC = 0.8
 
-
-def load_process_pretokeniser(path):
-    """read the data, generate labelsdict, id2label,label2id
+def load_data(project_id: int = 1):
+    """Load data from a Doccano project into a HF Dataset
+    assuming authentication details are available as env variables
 
     Args:
-        path (_type_, optional): _description_. Defaults to DATA_PATH.
-    """
-    df = pd.read_json(path)
-    df["label"] = df["label"].astype("category")
-    labels = list(df["label"].unique())
-    num_labels = len(labels)
-    labelsdict = {key: value for key, value in enumerate(labels)}
-    id2label = labelsdict
-    label2id = {value: idx for idx, value in id2label.items()}
-    df["category"] = df["label"].apply(lambda x: label2id[x])
-    df["category"] = df["category"].astype("int")
-    df.columns = ["text", "category", "labels"]
-    print(f"preprocessing complete")
-    return df, labels, num_labels, id2label, label2id
-
-
-def create_hfds(data, frac, random_state, splitfrac):
-    """_summary_
-
-    Args:
-        data (_type_): _description_
-        frac (_type_, optional): _description_. Defaults to FRAC.
-        random_state (_type_, optional): _description_. Defaults to RANDOM_STATE.
-        splitfrac (_type_, optional): _description_. Defaults to TRAIN_TEST_SPLITPERC.
+        project_id (int, optional): Doccano project ID. Defaults to 1.
 
     Returns:
-        _type_: _description_
+        Dataset: HF dataset
     """
-    print(
-        f"creating training and testing data by shuffling the {frac} with a random state of {random_state}"
-    )
-    data_shuffled = data.sample(frac=frac, random_state=random_state).reset_index(
-        drop=True
-    )
-    split_index = int(splitfrac * len(data_shuffled))
-    train_df = data_shuffled.iloc[:split_index]
-    test_df = data_shuffled.iloc[split_index:]
+    # Initialise connection to Doccano
+    doc_session = DoccanoSession()
+    doc_project = doc_session.client.find_project_by_id(project_id)
+    print(doc_project.project_type)
 
-    ds = DatasetDict()
-    train = Dataset.from_pandas(train_df)
-    val = Dataset.from_pandas(test_df)
-    ds["train"] = train
-    ds["validation"] = val
-    print(f"training and testing data generated as Huggingface format")
+    zip_file = doc_session.client.download(
+        project_id=project_id,
+        format="JSONL",
+        only_approved=False,
+        dir_name="data",
+    )
+
+    # print(type(zip_file))  # pathlib.PosixPath
+    with zipfile.ZipFile(zip_file, "r") as zip_ref:
+        zip_ref.extractall("data/")
+    os.remove(zip_file)
+
+    datestamp = datetime.now().astimezone().strftime("%Y%m%d")
+    unzipped_file = "data/admin.jsonl"
+    ds = load_dataset("json", data_files=unzipped_file, split="train")
+
+    os.rename(unzipped_file, f"data/{doc_project.name}_{datestamp}.jsonl")
+
     return ds
 
 
-def tokenize_function(examples, tokenizer):
+def tokenize_function(tokenizer, examples, padding="max_length", max_length=512):
     return tokenizer(
         examples["text"],
-        padding="max_length",
+        padding=padding,
         truncation=True,
-        max_length=512,
+        max_length=max_length,
         return_token_type_ids=False,
         return_attention_mask=True,
         return_tensors="pt",
@@ -81,44 +59,74 @@ def tokenize_function(examples, tokenizer):
     )
 
 
-def load_data():
-    # Initialise connection to Doccano
-    doc_session = DoccanoSession()
-    project_id = 1
+def select_single_label(ex):
+    """Doccano exports labels always as a list, containing different type of elements based on the project_type.
 
-    # labelled_samples = save_labelled_docs(doc_session, project_id)
-    # dataset = Dataset.from_generator(labelled_samples)
+    Args:
+        ex (_type_): _description_
 
-    # zipfile = doc_session.client.download(
-    #     project_id=project_id,
-    #     format="JSONL",
-    #     only_approved=False,
-    #     dir_name="data",
-    # )
-    # need to unzip
-    unzipped_file = "data/admin.jsonl"
-
-    return load_dataset("json", data_files=unzipped_file)
-
-
-def select_label(ex):
+    Returns:
+        _type_: _description_
+    """
     ex["labels"] = ex["label"][0]
     return ex
 
 
-def load_and_prepare_data(unzipped_file, tokenizer):
-    raw_dataset = load_dataset("json", data_files=unzipped_file, split="train")
-    single_label_dataset = raw_dataset.map(select_label)
-    cleaned_dataset = single_label_dataset.remove_columns(
-        ["id", "source_id", "Comments", "label"]
-    )
-    encoded_dataset = cleaned_dataset.class_encode_column("labels")
-    tokenized_dataset = encoded_dataset.map(
-        lambda x: tokenize_function(x, tokenizer),
-        batched=True,
-    )
-    tokenized_dataset.set_format("torch")
-    dataset_dict = tokenized_dataset.train_test_split(test_size=0.2)
+def preprocess_dataset(
+    raw_dataset,
+    tokenizer,
+    task="binary",
+    num_labels: int = 1,
+    padding: str = "max_length",
+    max_length: int = 512,
+):
+    """Preprocess a loaded dataset by normalising labels and tokenising text.
+
+    Args:
+        raw_dataset (Dataset): HF dataset object.
+        tokenizer (Tokenizer): HF tokeniser.
+        task (str, optional): Type of task, may be "binary", "multiclass", "multilabel" or "NER". Defaults to "binary".
+        num_labels (int, optional): Number of labels if multiple. Defaults to 1.
+        padding (str, optional): Padding strategy. Defaults to "max_length".
+        max_length (int, optional): Number of max token length. Defaults to 512.
+
+    Returns:
+        Dataset: a tokenized HF dataset.
+    """
+    raw_dataset = raw_dataset.remove_columns(["id", "source_id", "Comments"])
+
+    if task == "NER":
+        labeled_dataset = raw_dataset
+        # TODO: handle multiple spans, convert from char indexing to token indexing
+    elif task == "multilabel":
+        labeled_dataset = raw_dataset
+    else:
+        labeled_dataset = raw_dataset.map(select_single_label)
+        cleaned_dataset = labeled_dataset.remove_columns(["label"])
+        # labels expected to be an integer!
+        # use a LabelEncoder or similar after export from Doccano
+        encoded_dataset = cleaned_dataset.class_encode_column("labels")
+        print(encoded_dataset.features)
+        tokenized_dataset = encoded_dataset.map(
+            lambda x: tokenize_function(tokenizer, x, padding, max_length),
+            batched=True,
+        )
+        tokenized_dataset.set_format("torch")
+
+        return tokenized_dataset
+
+
+def split_dataset(tokenized_dataset, test_size=0.2):
+    """Create a "train" and "test" split from a HF dataset.
+
+    Args:
+        tokenized_dataset (Dataset): Dataset object to split
+        test_size (float, optional): Test to train sample ratio. Defaults to 0.2.
+
+    Returns:
+        DataDict: A HF dictionary of Dataset for "train" and "test".
+    """
+    dataset_dict = tokenized_dataset.train_test_split(test_size=test_size)
     # print(type(dataset_dict["train"]))  # <class 'datasets.arrow_dataset.Dataset'>
     return dataset_dict["train"], dataset_dict["test"]
 
@@ -128,18 +136,19 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     # load data
-    unzipped_file = "data/binary_BRCA.jsonl"  # "data/multiclass_BRCA.json"
-    # labels expected to be an integer!
-    # use a LabelEncoder or similar at export from Doccano
-    train_dataset, eval_dataset = load_and_prepare_data(unzipped_file, tokenizer)
-    print("Loaded, preprocessed and tokenised data")
+    dataset = load_data(project_id=1)
 
-    df, labels, num_labels, id2label, label2id = load_process_pretokeniser(
-        path=DATA_PATH
-    )
-    print("Data is read, labels dict generated.")
+    dataset_processed = preprocess_dataset(dataset, tokenizer, "binary")
 
-    ds = create_hfds(
-        data=df, frac=FRAC, random_state=RANDOM_STATE, splitfrac=TRAIN_TEST_SPLITPERC
-    )
-    print("Hugginface dataset generated")
+    train_dataset, eval_dataset = split_dataset(dataset_processed, 0.2)
+
+    print("Loaded, tokenised and split the dataset from Doccano project")
+    print(len(train_dataset))
+    print(len(eval_dataset))
+
+    print(train_dataset[0].keys())
+    print(eval_dataset[10]["labels"])
+
+
+if __name__ == "__main__":
+    main()
