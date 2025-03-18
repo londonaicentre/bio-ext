@@ -1,0 +1,20 @@
+{"text":"The patient was diagnosed with pneumonia and prescribed amoxicillin.","label":[[31,40,"DISEASE"],[56,68,"MEDICATION"]]}
+{"text":"He takes metformin daily to manage his type 2 diabetes.","label":[[9,18,"MEDICATION"],[39,54,"DISEASE"]]}
+{"text":"The doctor started her on fluoxetine for depression.","label":[[26,36,"MEDICATION"],[41,51,"DISEASE"]]}
+{"text":"After experiencing severe migraines, she was given sumatriptan.","label":[[26,35,"DISEASE"],[51,62,"MEDICATION"]]}
+{"text":"The treatment plan includes aspirin for cardiovascular disease.","label":[[28,35,"MEDICATION"],[40,62,"DISEASE"]]}
+{"text":"To manage her high blood pressure, she was prescribed lisinopril.","label":[[14,33,"DISEASE"],[54,64,"MEDICATION"]]}
+{"text":"Following a diagnosis of epilepsy, he was started on levetiracetam.","label":[[25,33,"DISEASE"],[53,66,"MEDICATION"]]}
+{"text":"Due to chronic asthma, he now uses an inhaler containing salbutamol.","label":[[7,21,"DISEASE"],[57,67,"MEDICATION"]]}
+{"text":"She takes warfarin to prevent blood clots after her stroke.","label":[[10,18,"MEDICATION"],[52,58,"DISEASE"]]}
+{"text":"The infection was treated with doxycycline.","label":[[4,13,"DISEASE"],[31,42,"MEDICATION"]]}
+{"text":"A course of prednisolone was prescribed to reduce inflammation.","label":[[12,24,"MEDICATION"]]}
+{"text":"He has rheumatoid arthritis and takes methotrexate weekly.","label":[[7,27,"DISEASE"],[38,50,"MEDICATION"]]}
+{"text":"Her eczema worsened, so she applied hydrocortisone cream.","label":[[4,10,"DISEASE"],[36,56,"MEDICATION"]]}
+{"text":"Gabapentin is often prescribed for nerve pain and epilepsy.","label":[[0,10,"MEDICATION"],[35,45,"DISEASE"],[50,58,"DISEASE"]]}
+{"text":"He was diagnosed with Crohn's disease and started on infliximab.","label":[[22,37,"DISEASE"],[53,63,"MEDICATION"]]}
+{"text":"The doctor recommended paracetamol for his fever.","label":[[23,34,"MEDICATION"]]}
+{"text":"Her persistent GERD symptoms were managed with omeprazole.","label":[[15,19,"DISEASE"],[47,57,"MEDICATION"]]}
+{"text":"Acyclovir was administered to treat her shingles.","label":[[0,9,"MEDICATION"],[40,48,"DISEASE"]]}
+{"text":"He was prescribed risperidone to manage schizophrenia.","label":[[18,29,"MEDICATION"],[40,53,"DISEASE"]]}
+{"text":"The patient received azithromycin for a bacterial infection.","label":[[21,33,"MEDICATION"],[40,59,"DISEASE"]]}

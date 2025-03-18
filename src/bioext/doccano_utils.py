@@ -36,14 +36,14 @@ class DoccanoSession:
                 "Doccano Project ID": project.id,
                 "Project creation time": formatted_datetime
             }
-        
+
         try:
             with open(filepath, "w") as f:
                 yaml.dump(metadata,f,sort_keys=False,default_flow_style=False)
             print(f"Metadata of project has been successfully written to {filepath}.")
         except (IOError,yaml.YAMLError) as e:
             print(f"An error {e} encountered and metadata is not saved.")
-    
+
     def create_or_update_project(
         self,
         name,
@@ -180,7 +180,7 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
     # doc_session.update_project()
     print(f"Using project: {project.name}, with ID {project.id}")
 
-    # load json from data file 
+    # load json from data file
     for file in os.listdir(data_file_path):
         with open(os.path.join(data_file_path, file), "r") as file:
             data = json.load(file)
@@ -189,7 +189,6 @@ def load_from_file(doc_session, data_file_path, doc_load_cfg):
                 data["_source"]["text"], metadata={"source_id": data["_id"]}
             )
     print(f"Uploaded {len(os.listdir(data_file_path))} examples")
-    
 
 
 def stream_labelled_docs(doc_session, doc_stream_cfg):

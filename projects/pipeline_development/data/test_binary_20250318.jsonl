@@ -1,0 +1,20 @@
+{"id":1,"text":"Biopsy results confirm the presence of malignant cells, and the patient has been referred for oncology assessment.","label":["Has cancer"],"Comments":[]}
+{"id":2,"text":"CT imaging reveals a mass with irregular borders and increased metabolic activity, highly suggestive of malignancy.","label":["Has cancer"],"Comments":[]}
+{"id":3,"text":"Histopathology confirms adenocarcinoma, and treatment planning for chemotherapy has begun.","label":["Has cancer"],"Comments":[]}
+{"id":4,"text":"PET scan shows widespread metastatic lesions consistent with advanced malignancy.","label":["Has cancer"],"Comments":[]}
+{"id":5,"text":"A lung biopsy confirms non-small cell carcinoma, and the patient is scheduled for staging investigations.","label":["Has cancer"],"Comments":[]}
+{"id":6,"text":"The patient has a history of breast cancer with recurrent nodules detected on follow-up imaging.","label":["Has cancer"],"Comments":[]}
+{"id":7,"text":"A colonoscopy identified a malignant tumor, and the patient is being prepped for surgical resection.","label":["Has cancer"],"Comments":[]}
+{"id":8,"text":"Bone marrow analysis confirms leukemia, and the patient is starting induction chemotherapy.","label":["Has cancer"],"Comments":[]}
+{"id":9,"text":"MRI shows a glioblastoma with midline shift, and neurosurgery has been consulted.","label":["Has cancer"],"Comments":[]}
+{"id":10,"text":"Fine-needle aspiration of a thyroid nodule reveals papillary carcinoma requiring surgical intervention.","label":["Has cancer"],"Comments":[]}
+{"id":11,"text":"Recent imaging shows a benign cyst with no suspicious features, and no further follow-up is needed.","label":["No cancer"],"Comments":[]}
+{"id":12,"text":"A dermatology review confirmed that the skin lesion is a benign nevus, with no signs of malignancy.","label":["No cancer"],"Comments":[]}
+{"id":13,"text":"A colonoscopy revealed only benign polyps with no evidence of dysplasia or malignancy.","label":["No cancer"],"Comments":[]}
+{"id":14,"text":"A lung nodule detected on screening CT remains stable over two years, with no concerning features.","label":["No cancer"],"Comments":[]}
+{"id":15,"text":"The patient’s breast lump was confirmed as a fibroadenoma, requiring no further intervention.","label":["No cancer"],"Comments":[]}
+{"id":16,"text":"Histopathology results indicate a reactive lymph node with no evidence of neoplastic changes.","label":["No cancer"],"Comments":[]}
+{"id":17,"text":"A follow-up MRI confirmed that the previously noted lesion had resolved, ruling out malignancy.","label":["No cancer"],"Comments":[]}
+{"id":18,"text":"Biopsy of the oral lesion showed only inflammatory changes, and no cancer was detected.","label":["No cancer"],"Comments":[]}
+{"id":19,"text":"The patient’s persistent cough was attributed to an infection, with no abnormalities seen on imaging.","label":["No cancer"],"Comments":[]}
+{"id":20,"text":"A PET scan showed no evidence of recurrent disease, and the patient remains in remission.","label":["No cancer"],"Comments":[]}
