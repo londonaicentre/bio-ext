@@ -1,0 +1,68 @@
+# config.yaml
+
+# web links
+sources:
+  - https://www.england.nhs.uk/wp-content/uploads/2018/08/cancer-national-genomic-test-drectory-V11-January-2025.xlsx
+  - https://www.cancer.gov/about-cancer/diagnosis-staging/diagnosis/tumor-markers-list
+  - https://www.accc-cancer.org/home/learn/precision-medicine/cancer-diagnostics/biomarkers/biomarkerlive/lexicon/cancer-biomarkers#B
+  - CONFID Ancora_Trials API_criteria_20250305.xlsx
+
+source0sheetslist:
+  - Solid tumours
+  - Neurological tumours
+  - Sarcoma
+  - Haematological
+  - Paediatric
+
+source0gencolnames:
+  - group
+  - ci_code
+  - clinical_indication_name
+  - test_code
+  - test_name
+  - target_genes
+  - target_gene_clinicaltrials
+  - test_scope
+  - technology
+  - optimal_family_structure
+  - further_eligibility
+  - further_eligibility_criteria
+  - changes_since_v1.0
+
+source0fillcolumns: 
+  - group
+  - ci_code
+  - clinical_indication_name
+
+source0haemcolnames:
+  - group
+  - ci_code
+  - clinical_indication_name
+  - test_code
+  - test_name
+  - target_genes
+  - test_scope
+  - technology
+  - optimal_family_structure
+  - further_eligibility_criteria
+  - changes_since_v1.0
+
+source0clean_names:
+  1p: Chromosome 1p
+  3: Chromosome 3
+  6: Chromosome 6
+  8: Chromosome 8
+  NTRK1/2/3: Chromosome 7
+  Chromosome 7 & 17: NTRK1
+  Dependent on clinical indication or specified request: SNP array
+  e.g. FUS-ERG: FUS-ERG
+  As appropriate: FISH copy number and rearrangement
+
+outputpath: data/output
+
+outputfilenames:
+  - canonical_uk_nhs_genes
+  - canonical_usa_nih_genes
+  - canonical_usa_acc_genes
+  - canonical_jz_source_genes
+  - canonical_combined_unique_genes

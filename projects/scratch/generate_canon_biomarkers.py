@@ -7,8 +7,14 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import os
+import yaml
+from datetime import datetime
+from pathlib import Path
 
 # FUNCTIONS
+with open("config.yaml", "r") as file:
+    """load config file using safe_load"""
+    config = yaml.safe_load(file)
 
 
 def create_soup(url: str):
@@ -64,6 +70,7 @@ def generate_nhsbiomarker(
     _genes = [gene for gene in _genes if gene is not None]
 
     # this code wont work without removing nan's
+    # this code unpacks list andalso if pipe symbol is used.
     _genes = [item for sublist in [x.split(",") for x in _genes] for item in sublist]
     _genes = [re.sub(r"^\s+|\s+$", "", gene) for gene in _genes]
 
@@ -75,7 +82,7 @@ def generate_unique_biomarkers(receptacle, listobject, label):
 
     Args:
         receptacle (where to store / dict): where the results will be stored
-        listobject (the list to work on): _description_
+        listobject (list): unique gene list
         label (str): custom label
 
     Returns:
@@ -86,69 +93,49 @@ def generate_unique_biomarkers(receptacle, listobject, label):
     receptacle["source"].append(label)
     return unique
 
-def save_to_local(destination, dataframes, filenames):
-    "simple function that resolves directory issues and saves locally"
+
+def save_to_local(destination, dataframes, filenames, nocsv=True):
+    """save files to local as parquet
+
+    Args:
+        destination (str): where files will be saved
+        dataframes (list): list of dataframes
+        filenames (list): list of strings filenames
+    """
     dest = os.path.dirname(destination)
     if not os.path.exists(dest):
         os.makedirs(dest)
         print(f"new directory created as {dest}")
+    pathslist = [os.path.join(destination, filename) for filename in filenames]
+
+    if nocsv:
+        pathslist = [f"{filename}.gzip" for filename in pathslist]
+        for i, df in enumerate(dataframes):
+            dataframes[i].to_parquet(pathslist[i])
     else:
-        pass
-    filenameslist = filenames
-    pathslist = [os.path.join(destination,filename) for filename in filenameslist]
-    dataframes[0].to_csv(pathslist[0])
-    dataframes[1].to_csv(pathslist[1])
-    dataframes[2].to_csv(pathslist[2])
-    print("non-unique-csv's written")
-    dataframes[3].to_csv(pathslist[3])
-    print("unique-csv is also written.")
-    
+        pathslist = [f"{filename}.csv" for filename in pathslist]
+        for i, df in enumerate(dataframes):
+            dataframes[i].to_csv(pathslist[i])
+
+    print("files written")
+
 
 # DATA SOURCES
 
-source_links = [
-    "https://www.england.nhs.uk/wp-content/uploads/2018/08/cancer-national-genomic-test-drectory-V11-January-2025.xlsx",
-    "https://www.cancer.gov/about-cancer/diagnosis-staging/diagnosis/tumor-markers-list",
-    "https://www.accc-cancer.org/home/learn/precision-medicine/cancer-diagnostics/biomarkers/biomarkerlive/lexicon/cancer-biomarkers#B",
-]
-
-
 sheets_dict = pd.read_excel(
-    io=source_links[0],
+    io=config["sources"][0],
     engine="openpyxl",
     sheet_name=None,
 )
+
+mappings = config["source0clean_names"]
+# this mapping will be used to rename and clean some gene names
+
 
 def clean_and_generate_genes():
     ##########
     # TASK1: working on SOURCE 1 : UK NHS
     # WILL ONLY PARSE NECESSARY COLUMNS
-
-    sheetslist = [
-        "Solid tumours",
-        "Neurological tumours",
-        "Sarcoma",
-        "Haematological",
-        "Paediatric",
-    ]
-
-    colnames = [
-        "group",
-        "ci_code",
-        "clinical_indication_name",
-        "test_code",
-        "test_name",
-        "target_genes",
-        "target_gene_clinicaltrials",
-        "test_scope",
-        "technology",
-        "optimal_family_structure",
-        "further_eligibility",
-        "further_eligibility_criteria",
-        "changes_since_v1.0",
-    ]
-
-    fillcolumns = ["group", "ci_code", "clinical_indication_name"]
 
     # will collect result in
     result1 = {"biomarker": [], "source": []}
@@ -156,19 +143,16 @@ def clean_and_generate_genes():
 
     ## TASK1a solid tumours
     solid, df_solid = generate_nhsbiomarker(
-        "Solid tumours", colnames=colnames, ffillcols=fillcolumns, source=sheets_dict
+        config["source0sheetslist"][0],
+        colnames=config["source0gencolnames"],
+        ffillcols=config["source0fillcolumns"],
+        source=sheets_dict,
     )
 
-    solid = ["Chromosome 1p" if gene == "1p" else gene for gene in solid]
-    solid = ["Chromosome 3" if gene == "3" else gene for gene in solid]
-    solid = ["Chromosome 6" if gene == "6" else gene for gene in solid]
-    solid = ["Chromosome 8" if gene == "8" else gene for gene in solid]
-    solid = ["Chromosome 7" if gene == "NTRK1/2/3" else gene for gene in solid]
-    solid = ["NTRK1" if gene == "Chromosome 7 & 17" else gene for gene in solid]
+    solid = [mappings.get(gene, gene) for gene in solid]
     solid.append("Chromosome 17")
     solid.append("NTRK2")
     solid.append("NTRK3")
-
 
     unique_solids = generate_unique_biomarkers(
         receptacle=result1, listobject=solid, label="uk_nhs_solidtumours"
@@ -176,78 +160,57 @@ def clean_and_generate_genes():
 
     ## TASK 1b: neuro tumours
     neuro, df_neuro = generate_nhsbiomarker(
-        "Neurological tumours", colnames=colnames, ffillcols=fillcolumns, source=sheets_dict
+        config["source0sheetslist"][1],
+        colnames=config["source0gencolnames"],
+        ffillcols=config["source0fillcolumns"],
+        source=sheets_dict,
     )
-    neuro = [
-        (
-            "SNP array"
-            if gene == "Dependent on clinical indication or specified request"
-            else gene
-        )
-        for gene in neuro
-    ]
+    neuro = [mappings.get(gene, gene) for gene in neuro]
     unique_neuro = generate_unique_biomarkers(
         receptacle=result1, listobject=neuro, label="uk_nhs_neurotumours"
     )
 
     ## TASK 1c: sarcoma
-    sarcoma, df_sarcoma = neuro = generate_nhsbiomarker(
-        "Sarcoma", colnames=colnames, ffillcols=fillcolumns, source=sheets_dict
+    sarcoma, df_sarcoma = generate_nhsbiomarker(
+        config["source0sheetslist"][2],
+        colnames=config["source0gencolnames"],
+        ffillcols=config["source0fillcolumns"],
+        source=sheets_dict,
     )
-    sarcoma = [
-        (
-            "SNP array"
-            if gene == "Dependent on clinical indication or specified request"
-            else gene
-        )
-        for gene in sarcoma
-    ]
+    sarcoma = [mappings.get(gene, gene) for gene in sarcoma]
     unique_sarcoma = generate_unique_biomarkers(
         receptacle=result1, listobject=sarcoma, label="uk_nhs_sarcoma"
     )
 
-
     ## TASK1d: haematological
-    ## not different colnames
-    colnameshaem = [
-        "group",
-        "ci_code",
-        "clinical_indication_name",
-        "test_code",
-        "test_name",
-        "target_genes",
-        "test_scope",
-        "technology",
-        "optimal_family_structure",
-        "further_eligibility_criteria",
-        "changes_since_v1.0",
-    ]
-    haematol, df_haem = generate_nhsbiomarker(
-        "Haematological", colnames=colnameshaem, ffillcols=fillcolumns, source=sheets_dict
+    ## note different colnames
+    haemonc, df_haem = generate_nhsbiomarker(
+        config["source0sheetslist"][3],
+        colnames=config["source0haemcolnames"],
+        ffillcols=config["source0fillcolumns"],
+        source=sheets_dict,
     )
-    haematol.remove("Genome-wide (high resolution)")
+    haemonc.remove("Genome-wide (high resolution)")
     haemwgs = ["WGS Germline and tumour", "WGS Tumour First", "WGS Follow-up Germline"]
     haemwgsrepeat = haemwgs * 24
-    haematol.extend(haemwgsrepeat)
+    haemonc.extend(haemwgsrepeat)
 
-    haematol = [("FUS-ERG" if gene == "e.g. FUS-ERG" else gene) for gene in haematol]
-    haematol = [
-        ("FISH copy number and rearrangement" if gene == "As appropriate" else gene)
-        for gene in haematol
-    ]
+    haemonc = [mappings.get(gene, gene) for gene in haemonc]
 
     unique_haem = generate_unique_biomarkers(
-        receptacle=result1, listobject=haematol, label="uk_nhs_haematological"
+        receptacle=result1, listobject=haemonc, label="uk_nhs_haematological"
     )
 
     ## TASK 1e: paediatric
     paeds, df_paed = generate_nhsbiomarker(
-        "Paediatric", colnames=colnames, ffillcols=fillcolumns, source=sheets_dict
+        config["source0sheetslist"][4],
+        colnames=config["source0gencolnames"],
+        ffillcols=config["source0fillcolumns"],
+        source=sheets_dict,
     )
     unique_paed = generate_unique_biomarkers(
         receptacle=result1, listobject=paeds, label="uk_nhs_paeds"
     )
-
 
     ## TASK 1 outputs
     df_uknhs = pd.concat([df_solid, df_neuro, df_sarcoma, df_haem, df_paed])
@@ -255,6 +218,7 @@ def clean_and_generate_genes():
     unique_biomarkers = (
         unique_solids + unique_neuro + unique_sarcoma + unique_haem + unique_paed
     )
+    unique_biomarkers = list(set(unique_biomarkers))
     df_unique = pd.DataFrame(result1)
     df_unique = df_unique.explode("biomarker").reset_index(drop=True)
 
@@ -264,15 +228,17 @@ def clean_and_generate_genes():
     ## create receptacle
     results2 = {"biomarker": [], "conditions": [], "analysed": [], "usage": []}
 
-    soup2 = create_soup(source_links[1])
+    soup2 = create_soup(config["sources"][1])
 
     ## Find all p tags
     p_tags = soup2.find_all("p")
 
     ## custom conditions
-    condition_pattern = r":\s*(.*?)\s*What"
-    analysed_pattern = r"analyzed:\s*(.*?)\s*How"
-    usage_pattern = r"How used:\s*(.*)"
+    condition_pattern = r":\s*(.*?)\s*What"  # looks for colon and any text until "what"
+    analysed_pattern = (
+        r"analyzed:\s*(.*?)\s*How"  # looks for analyzed: and selects until How"
+    )
+    usage_pattern = r"How used:\s*(.*)"  # looks for any after "how used"
 
     ## iterate over the <strong>
     for p in p_tags:
@@ -284,10 +250,7 @@ def clean_and_generate_genes():
             description = p.find_next("p", style=lambda x: "padding-left" in x)
             text = description.get_text()
 
-            if text is None:
-                pass
-            else:
-
+            if text is not None:
                 condition = re.findall(condition_pattern, text, re.DOTALL)
                 results2["conditions"].append(condition[0])
 
@@ -301,17 +264,17 @@ def clean_and_generate_genes():
     df_nih = pd.DataFrame(results2)
     df_nih = df_nih.assign(source="usa_nih")
 
-    # TASK 2
+    # TASK 3
     ## create task 3 receptacle
     result3 = {"biomarker": [], "definition": [], "synonyms": [], "conditions": []}
-    soup3 = create_soup(source_links[2])
+    soup3 = create_soup(config["sources"][2])
 
     ## find the correct <div>
     markers = soup3.find_all("div", class_="marker")
 
     ## regex conditions specific for task 3
-    synonym_condition = r"d:\s*(.*)"
-    associated_condition = r"rs:\s*(.*)"
+    synonym_condition = r"d:\s*(.*)"  # looks for "d:" then all after
+    associated_condition = r"rs:\s*(.*)"  # similarly for "rs:"
 
     ## iterate over the divs
     for m in markers:
@@ -326,7 +289,7 @@ def clean_and_generate_genes():
             # get synonyms which need parsing
             synonyms = ptags[2].get_text()
             synonyms_parsed = re.search(synonym_condition, synonyms, re.DOTALL)
-            result3["synonyms"].append(synonyms_parsed)
+            result3["synonyms"].append(synonyms_parsed.group(1))
             # get conditions which need parsing
             conditions = ptags[3].get_text()
         else:
@@ -338,10 +301,24 @@ def clean_and_generate_genes():
         condition_parsed = re.search(associated_condition, conditions, re.DOTALL)
         result3["conditions"].append(condition_parsed[1])
 
-
     ## TASK 3 outputs
     df_acc = pd.DataFrame(result3)
     df_acc = df_acc.assign(source="usa_acc")
+
+    ## TASK 4 new data source from JZ
+    path = Path("data/") / config["sources"][3]
+    df_source4 = pd.read_excel(
+        io=path,
+        engine="openpyxl",
+        sheet_name=None,
+    )
+
+    df_conf = df_source4["Sheet1"]
+    # TASK 4 outputs: extract the biomarkers only
+    df_conf = df_conf[df_conf["Category"] == "Biomarker"]
+    df_conf = pd.DataFrame(
+        {"biomarker": df_conf["Criteria"].tolist(), "source": "jzconf"}
+    )
 
     # MAKE A UNIQUE GENE NAMES ONLY CSV
     all_unique_df = pd.concat(
@@ -349,24 +326,29 @@ def clean_and_generate_genes():
             df_unique[["biomarker", "source"]],
             df_nih[["biomarker", "source"]],
             df_acc[["biomarker", "source"]],
-        ]
+            df_conf[["biomarker", "source"]],
+        ],
+        ignore_index=True,
     )
-    all_unique_df = all_unique_df.reset_index(drop=True)
     all_unique_df = all_unique_df.drop_duplicates(subset="biomarker")
-    all_unique_df = all_unique_df.reset_index(drop=True)
-    
-    return df_unique, df_nih, df_acc, all_unique_df
+
+    return df_unique, df_nih, df_acc, df_conf, all_unique_df
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     """
     when called as script, will save to local dev
-    
+    first make dataframes, then will add time stamp
+    then write files as per below.
+
     """
     dataframes = clean_and_generate_genes()
-    
+
     # OUTPUT DESTINATION
-    outputpath = "data/output/"
-    csvnames = ["canonical_uk_nhs_genes.csv","canonical_usa_nih_genes.csv","canonical_usa_acc_genes.csv","canonical_combined_unique_genes.csv"]
-    save_to_local(destination = outputpath, dataframes=dataframes,filenames=csvnames)
+    outputpath = config["outputpath"]
+    csvnames = config["outputfilenames"]
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+    csv_timestamped = [f"{filename}_{timestamp}" for filename in csvnames]
+    save_to_local(
+        destination=outputpath, dataframes=dataframes, filenames=csv_timestamped
+    )

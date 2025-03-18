@@ -3,7 +3,13 @@
 ## Brief
 
 We want to identify all possible *biomarkers* currently known by using canonical data sources.
-Then, we will want to identify where each *biomarkers* reside in our Elastic / Cog stack
+Then, we will want to identify where each *biomarkers* reside in our Elastic / Cog stack.
+
+## Features
+
+- Datetimestamp on written data
+- new sources can be appending to config.yaml
+
 
 ## Data Sources
 
@@ -25,6 +31,11 @@ Quality: potenitally high but not UK
 Source 4: [USA NIH source](https://edrn.nci.nih.gov/data-and-resources/biomarkers/)
 Comments: Web page
 Quality: Currently down likely due to US Administration pulling NIH pages
+
+Source 5: Joe Zhang's confidential source
+Comments:Simple excel file 
+Quality: clean
+59 unique biomarkers
 
 ## Query savings
 
