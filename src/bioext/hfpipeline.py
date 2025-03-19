@@ -24,6 +24,49 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 
+"""
+hfpipeline.py
+This module abstracts Hugging Face Transformers NLP tasks into an easy to implement pipeline
+Supports end-to-end workflow from data loading and preprocessing to model training and evaluation.
+
+Key components:
+- Data loading from annotation platforms (currently supports Doccano)
+- Text tokenization and preprocessing for various NLP tasks
+- Dataset splitting and preparation
+- Model training with appropriate configurations
+- Performance evaluation with task-specific metrics
+
+Supported task types:
+- Multi-class classification: Each text belongs to exactly one class
+- Multi-label classification: Each text can belong to multiple classes
+- TO DO: Named Entity Recognition
+- TO DO: Question Answering
+
+Usage example:
+    ```
+    # Imports
+    from bioext.hfpipeline import GlobalConfig, DataHandler, HFSequenceClassificationTrainer
+    from bioext.hfpipeline import DataSource, TaskType
+
+    # Configure the pipeline
+    config = GlobalConfig(
+    doc_project_id=42,
+    source=DataSource.DOCCANO,
+    task=TaskType.MULTICLASS,
+    num_labels=3,
+    model_name="distilbert-base-uncased"
+    )
+
+    # Load and preprocess data
+    data_handler = DataHandler(config=config)
+
+    # Set up and run training
+    trainer = HFSequenceClassificationTrainer(config=config, tokenizer=data_handler.tokenizer)
+    trainer.setup_trainer(data_handler.train_dataset, data_handler.test_dataset)
+    metrics = trainer.train()
+    ```
+"""
+
 class DataSource(Enum):
     """
     Enum for supported data sources
@@ -42,7 +85,13 @@ class TaskType(Enum):
 @dataclass
 class GlobalConfig:
     """
-    Global configuration for data handling and model training
+    Global configuration for data handling and model training, including:
+    - Data source (which project, source type)
+    - Task-specific (task type, number of labels)
+    - Model selection (which pre-trained model to use)
+    - Tokenization parameters (padding, truncation, etc.)
+    - Dataset preparation (test/train split ratio)
+    - Training hyperparameters (batch size, learning rate, etc.)
     """
     # Data source
     doc_project_id: int = 1
@@ -90,6 +139,28 @@ class GlobalConfig:
         """
         return self.task.value
 
+
+"""
+DataHandler
+Manages complete data pipeline from raw annotated data to training-ready datasets.
+
+Handles data import:
+- Connects to annotation sources (currently Doccano)
+- Downloads and extracts annotated data
+- Converts to HuggingFace Dataset format
+
+Preprocessing:
+- Implements task-specific label processing:
+    - For MULTICLASS: Extract first label, encode to integers, rename to 'labels'
+    - For MULTILABEL: Convert label lists to multi-hot vectors in 'labels'
+    - (TODO) NER: Process character spans to token classification format
+- Performs text tokenization with appropriate model tokenizer
+- Handles dataset formatting for HuggingFace Trainer compatibility
+
+Dataset Management:
+- Splits data into training and test sets
+- Provides access to raw, processed, and split datasets
+"""
 
 class DataHandler:
     """
@@ -142,14 +213,19 @@ class DataHandler:
             dir_name="data",
         )
 
+        # we can read the name of the file from inside the zip
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
+            jsonl_file = next((f for f in zip_ref.namelist() if f.endswith('.jsonl')), None)
+            if not jsonl_file:
+                raise FileNotFoundError("No JSONL file found in the downloaded archive")
             zip_ref.extractall("data/")
+
         os.remove(zip_file)
 
-        datestamp = datetime.now().astimezone().strftime("%Y%m%d")
-        unzipped_file = "data/doccanoadmin.jsonl" ### *** my exports are called doccanoadmin?
+        unzipped_file = os.path.join("data", jsonl_file)
         dataset = load_dataset("json", data_files=unzipped_file, split="train")
 
+        datestamp = datetime.now().astimezone().strftime("%Y%m%d")
         os.rename(unzipped_file, f"data/{doc_project_id.name}_{datestamp}.jsonl")
 
         return dataset, doc_project_id.project_type
@@ -180,10 +256,55 @@ class DataHandler:
 
         if self.config.task == TaskType.NER:
             pass # TO DO: handle multiple spans, convert from char indexing to token indexing
-        elif self.config.task == TaskType.MULTILABEL:
-            pass # TO DO
-        elif self.config.task == TaskType.MULTICLASS:
 
+        elif self.config.task == TaskType.MULTILABEL:
+            all_labels = set()
+            for example in labeled_dataset:
+                all_labels.update(example["label"])
+            all_labels = sorted(list(all_labels))
+
+            # label to index mapping
+            self.label2id = {label: i for i, label in enumerate(all_labels)}
+            self.id2label = {i: label for i, label in enumerate(all_labels)}
+
+            # make sure number of labels match
+            assert self.config.num_labels == len(all_labels), (
+                f"Config specifies {self.config.num_labels} labels, but found {len(all_labels)}."
+                f"Please update your configuration to match."
+            )
+
+            def _convert_to_multilabel(example):
+                """
+                Convert label list to multi-hot encoding
+                """
+                # initialise 0.0 (float) vector of label length
+                labels = [0.0] * self.config.num_labels
+
+                # one hot encode each present label
+                for label in example["label"]:
+                    if label in self.label2id:
+                        labels[self.label2id[label]] = 1.0
+
+                example["labels"] = labels
+                return example
+
+            # apply multilabel encoding
+            encoded_dataset = labeled_dataset.map(_convert_to_multilabel)
+
+            # remove 'label' column
+            if "label" in encoded_dataset.column_names:
+                encoded_dataset = encoded_dataset.remove_columns(["label"])
+
+            # tokenise
+            tokenized_dataset = encoded_dataset.map(
+                lambda x: self.tokenize_function(x),
+                batched=True,
+            )
+            tokenized_dataset.set_format("torch")
+
+            return tokenized_dataset
+
+        elif self.config.task == TaskType.MULTICLASS:
             def _extract_label(example):
                 """
                 For multi-class only, extract the first label from Doccano
@@ -192,12 +313,10 @@ class DataHandler:
                 return example
 
             labeled_dataset = labeled_dataset.map(_extract_label)
-            # labels expected to be an integer!
-            # use a LabelEncoder or similar after export from Doccano
             encoded_dataset = labeled_dataset.class_encode_column("label")
             print(encoded_dataset.features)
 
-            # Map 'label' to 'labels' to match HF Trainer expectations
+            # rename column to "labels" for HF Trainer
             encoded_dataset = encoded_dataset.rename_column("label", "labels")
 
             tokenized_dataset = encoded_dataset.map(
@@ -207,9 +326,6 @@ class DataHandler:
             tokenized_dataset.set_format("torch")
 
             return tokenized_dataset
-        else:
-            print("Task type must be set")
-            return None
 
     def split_dataset(self):
         """
@@ -223,6 +339,42 @@ class DataHandler:
         # print(type(dataset_dict["train"]))  # <class 'datasets.arrow_dataset.Dataset'>
         return dataset_dict["train"], dataset_dict["test"]
 
+
+"""
+HFSequenceClassifier
+Sets up a Huggingface trainer class with a task, base model, and training configurations
+
+Multi-Class Classification:
+- Loss and activation baked into problem_type = "single_label_classification"
+- Each sequence of text belongs to exactly one class
+- Two classes or more
+- Typically uses Cross-Entropy Loss (nn.CrossEntropyLoss)
+- Uses softmax activation (built into model) to standardise across probas
+- Predictions should use argmax, i.e. select highest probability class
+- Example format:
+    ```
+    dataset = {
+        'text': ["This movie is great", "The service was terrible", "The experience was average"],
+        'label': [0, 1, 2]  # single integer label per example
+    }
+    ```
+- Metrics: precision, recall, f1, accuracy (using predicted class)
+
+Multi-Label Classification:
+- Loss and activation baked into problem_type = "multi_label_classification"
+- Each example can belong to multiple classes simultaneously
+- Typically Binary Cross-Entropy (nn.BCEWithLogitsLoss) > average of indepdent loss per prediction
+- Uses sigmoid activation (1/(1+e^-x)) to get independent probabilities per label
+- Predictions should use a threshold (e.g. 0.5) to determine which classes are positive
+- Example format:
+    ```
+    dataset = {
+        'text': ["Amazing thriller with lots of action", "Great comedy with mediocre sci-fi elements"],
+        'labels': [[1, 0, 0], [1, 0, 1]]  # binary vector per example
+    }
+    ```
+- Metrics: micro-averaged f1, macro F1, precision, recall, Jaccard index, accuracy (comparing binary vectors)
+"""
 
 class HFSequenceClassificationTrainer:
     """
