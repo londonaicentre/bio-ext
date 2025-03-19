@@ -1,12 +1,8 @@
 import pandas as pd
-from collections import Counter
-import json
-import math
 import numpy as np
 import re
 import requests
 from bs4 import BeautifulSoup
-import os
 import yaml
 from datetime import datetime
 from pathlib import Path
@@ -102,18 +98,16 @@ def save_to_local(destination, dataframes, filenames, nocsv=True):
         dataframes (list): list of dataframes
         filenames (list): list of strings filenames
     """
-    dest = os.path.dirname(destination)
-    if not os.path.exists(dest):
-        os.makedirs(dest)
+    dest = Path(destination)
+    if not dest.exists():
+        dest.mkdir(parents=True)
         print(f"new directory created as {dest}")
-    pathslist = [os.path.join(destination, filename) for filename in filenames]
-
     if nocsv:
-        pathslist = [f"{filename}.gzip" for filename in pathslist]
+        pathslist = [dest / f"{filename}.gzip" for filename in filenames]
         for i, df in enumerate(dataframes):
             dataframes[i].to_parquet(pathslist[i])
     else:
-        pathslist = [f"{filename}.csv" for filename in pathslist]
+        pathslist = [dest / f"{filename}.csv" for filename in filenames]
         for i, df in enumerate(dataframes):
             dataframes[i].to_csv(pathslist[i])
 
@@ -347,8 +341,11 @@ if __name__ == "__main__":
     # OUTPUT DESTINATION
     outputpath = config["outputpath"]
     csvnames = config["outputfilenames"]
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     csv_timestamped = [f"{filename}_{timestamp}" for filename in csvnames]
     save_to_local(
-        destination=outputpath, dataframes=dataframes, filenames=csv_timestamped
+        destination=outputpath,
+        dataframes=dataframes,
+        filenames=csv_timestamped,
+        nocsv=True,
     )
