@@ -227,5 +227,7 @@ tdf = fetch_sample_data(query=query_2,index_name="gstt_clinical_discharge_letter
 
 
 index_sizes = es.cat.indices(format="json",h=["index","docs.count"])
+j = "gstt_clinical_epic_imaging_reports_20250123"
+mapping = es.indices.get_mapping(index = j)
 
-mapping = es.indices.get_mapping(index = "gstt_clinical_epic_imaging_reports_20250123")
+mapping

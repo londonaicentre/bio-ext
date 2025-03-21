@@ -45,3 +45,36 @@ Other people have been attempting similar solution. See here by [Qgenomeapp](htt
 
 * The files are one for each data source with a bit more columns unique to each source. These are useful for downstream NLP tasks
 * Then one final `canonical_combined_unique_genes.csv` which includes all the 3 sources concatenated.
+
+
+
+
+# CUSTOM FUNCS
+all_cols_query = {
+        "size": sample_size,
+        "query":{"match_all":{}}
+    }
+
+only_docs_query =  {
+        "_source":[
+            "patient_NHSNumber",
+            "document_Name"
+            
+        ],
+        "size": sample_size,
+        "query":{"match_all":{}}
+    }
+
+# this query is not tested.
+unique_levels = {
+    "size": 0,
+    "aggs": {
+        "unique_values":{
+            "terms":{
+                "field":field_name,
+                "size":100
+            }
+        }
+    }
+}
+
