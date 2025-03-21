@@ -82,7 +82,7 @@ These are records taken during outpatient visit consultations. They usually cont
 ```
 
 ## brca documents
-```
+```json
 {
     "_source": [
         "id",
