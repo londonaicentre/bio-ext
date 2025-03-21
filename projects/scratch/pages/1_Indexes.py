@@ -7,7 +7,7 @@ from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
 import yaml
 import os
 import nltk
-from collections import Counter
+from collections import Counter, defaultdict
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
@@ -83,23 +83,25 @@ def global_overview(_es,indexlist):
     _df["docs.count"] = _df["docs.count"].astype("int64")
     return _df 
 
-
-def characterisedf(data):
-    x = data.shape
-    y = data.columns
+@st.cache_data
+def characterisedf(_data):
+    """
+    given data, it does basic EDA 
+    
+    """
+    x = _data.shape
+    y = _data.columns
     st.write(f"Dimensions of this dataframe: {x}")
-    st.subheader("Columns names")
-    st.write(y)
-    st.subheader("all rows")
-    st.write(data)
+    st.subheader("Example data")
+    st.write(_data)
     
     if "_source.document_Content" in list(y):
-        data["_source.document_Content"] = data["_source.document_Content"].astype(str)
-        data = data.assign(word_count = data["_source.document_Content"].apply(lambda x: len(x.split())))
+        _data["_source.document_Content"] = _data["_source.document_Content"].astype(str)
+        _data = _data.assign(word_count = _data["_source.document_Content"].apply(lambda x: len(x.split())))
         st.write("Word count statisics for column document Content")
-        st.write(data["word_count"].describe())
+        st.write(_data["word_count"].describe())
         st.write("top 10 words")
-        combined_text = "".join(data["_source.document_Content"].tolist())
+        combined_text = "".join(_data["_source.document_Content"].tolist())
         words = combined_text.split()
         #words_cleaned = remove_stopwords(text=words)
         words_counts = Counter(words)
@@ -110,13 +112,24 @@ def characterisedf(data):
     
 @st.cache_data    
 def remove_stopwords(text):
+    """
+    remove stop words using nltk but currently not functional yet
+    """
     #nltk.download("stopwords")
     stop_words = set(stopwords.words("english"))
     _tokens = word_tokenize(text)
     _filtered = [w for w in _tokens if not w in stop_words]
     return _filtered 
+
+@st.cache_data
+def get_summary(_es,index):
+    """to gain 5 number summary of the index ones 
+    """
+    mapping = _es.indices.get_mapping(index=index)
+    properties = mapping[index]["mappings"]["properties"] 
     
-   
+    return properties
+
 # LOAD variables
 load_dotenv()
 user = os.environ.get("ELASTIC_API_ID")
@@ -131,8 +144,13 @@ config["all_cols_query"]["size"] = samplesize
 
 es = connect_cogstack()
 st.write(f"Successfully logged into Elastic Session for user: {user}")
+if "es" not in st.session_state:
+    st.session_state["es"] = es
 
 all_indexes, all_df = list_and_fetch_data(_es=es,query=config["all_cols_query"])
+if 'indexlist' not in st.session_state:
+    st.session_state['indexlist'] = all_indexes
+
 st.markdown("These are the available indexes, documents in each and their sizes.")
 cogstack_brief = global_overview(_es = es, indexlist=all_indexes)
 
@@ -140,11 +158,18 @@ st.write(cogstack_brief)
 st.write(cogstack_brief.dtypes)
 st.markdown("## Now this looks into each individual dataframes")
 
+# this for loop create the expander objects in streamlit each with dataframe name 
 for i in all_df.keys():
-    with st.expander(i):
-        st.header(i)
+    overview_df = cogstack_brief[cogstack_brief["index"] == i ].to_dict("records")[0]
+    headerstring = f"{overview_df["index"]} , docs= {overview_df["docs.count"]},size = {overview_df["store.size"]}, no_cols={overview_df["fields_counts"]}"
+    with st.expander(headerstring):
         _df = all_df[i]
-        characterisedf(data=_df)
+        mapping = es.indices.get_mapping(index = i)
+        st.markdown("#### Columns")
+        st.write(mapping[i]["mappings"])
+        characterisedf(_data=_df)
+        #resultsum = get_summary(_es=es,index=i)
+        #st.write(resultsum)
         
 st.write("ZZZ")
 

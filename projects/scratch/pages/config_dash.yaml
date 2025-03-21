@@ -1,16 +1,13 @@
 intro: This simple dash helps familiarise cogstack indexes to users. 
 instructions: Please select the number of documents (i.e., rows) that you want to be read into as a sample.
 start2: See here how the data looks like!
-hellotext: Teddy build this make his life easier.
+hellotext: Teddy build this to make his life easier.
 
 all_cols_query:
   size: "__PLACEHOLDER__"
   query: {"match_all":{}}
 
 
-unique_levels:
-  size: 0
-  aggs: 
 
 
 
