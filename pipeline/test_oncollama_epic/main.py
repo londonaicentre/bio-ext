@@ -216,6 +216,8 @@ def main():
     input_dir = "testdata"
     output_dir = "testoutputs"
 
+    os.makedirs(output_dir, exist_ok=True)
+
     process_directory(input_dir, output_dir)
 
 if __name__ == "__main__":
