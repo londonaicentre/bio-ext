@@ -111,7 +111,7 @@ def process_document_content(document_content, api_url="http://localhost:8080/v1
     headers = {"Content-Type": "application/json"}
 
     payload = {
-        "model": "model",
+        "model": "oncollamav2",
         "messages": [
             {"role": "system", "content": get_system_prompt()},
             {"role": "user", "content": text_to_process},
@@ -170,6 +170,7 @@ def process_single_file(file_path, output_dir):
                 "patient_EpicId": input_data["_source"].get("patient_EpicId"),
                 "patient_NhsNumber": input_data["_source"].get("patient_NhsNumber"),
                 "activity_Department": input_data["_source"].get("activity_Department"),
+                "source_document": input_data["_source"].get("document_Content"),                
                 "extraction_result": extraction_result
             }
 

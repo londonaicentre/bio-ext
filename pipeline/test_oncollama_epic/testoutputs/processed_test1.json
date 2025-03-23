@@ -1,0 +1,117 @@
+{
+  "source_id": "1",
+  "patient_SourceId": 123984,
+  "patient_EpicId": "HOKOSHDVBM",
+  "patient_NhsNumber": 12039866,
+  "activity_Department": "CANCER CARE",
+  "source_document": "Patient information headings. Patient name: James Smith. Diagnosis:\nMetastatic ascending colon adenocarcinoma with signet ring features and peritoneal disease\nDiagnosed March 2024\nHER2 positive, RAS wild-type\n\nPrevious Treatment:\nRight hemicolectomy 15 March 2024\nCompleted 3 cycles FOLFOX with poor tolerance\n\nClinical Trial Status:\nScreening visit completed for HERACLES-B trial of Trastuzumab-Deruxtecan in HER2-positive metastatic colorectal cancer\n\nCurrent Situation:\nI reviewed [redacted name] today who attended with his wife for clinical trial enrollment. He has unfortunately experienced significant toxicity from standard FOLFOX chemotherapy, with grade 3 peripheral neuropathy and persistent nausea requiring two hospital admissions. Despite these challenges, his most recent CT scan shows stable peritoneal disease, and his CEA has decreased from 245 to 180.\n\nTrial Eligibility:\nHe meets all inclusion criteria for the HERACLES-B trial. HER2 positivity has been confirmed on both immunohistochemistry (3+) and FISH testing. RAS wild-type status confirmed. Baseline cardiac function is normal with LVEF 62%. All screening blood tests, including liver and renal function, are within protocol parameters.\n\nTrial Discussion:\nI have had a detailed discussion with [redacted name] and his wife about the HERACLES-B trial. We reviewed the schedule of visits, procedures, and potential side effects of Trastuzumab-Deruxtecan. He understands this is a Phase II trial evaluating efficacy in HER2-positive colorectal cancer. The requirement for regular cardiac monitoring and risk of pneumonitis were specifically discussed. He has been provided with the full trial information sheet and emergency contact details.\n\nBaseline Assessments:\nPerformance status is 1, weight 72.4kg (stable). Blood pressure 132/78, pulse 84 regular. Examination shows mild abdominal distension but no tenderness. No peripheral neuropathy evident following resolution of FOLFOX-related symptoms.\n\nPlan:\nTrial consent forms completed today. Baseline CT chest/abdomen/pelvis and cardiac echo arranged for next week. First trial treatment planned for 15 April 2024 pending final central confirmation of eligibility.",
+  "extraction_result": {
+    "primary_cancer": {
+      "primary_cancer_facts": {
+        "site": "ascending colon",
+        "year": "2024",
+        "month": "03",
+        "performance_status": "1",
+        "histopathology_status": "adenocarcinoma with signet ring features",
+        "spread_block": [
+          {
+            "site": "peritoneal"
+          }
+        ],
+        "spread_desc": "Metastatic ascending colon adenocarcinoma with signet ring features and peritoneal disease",
+        "biomarker_block": [
+          {
+            "biomarker_name": "HER2",
+            "binary_status": "+ve",
+            "status_desc": "3+"
+          },
+          {
+            "biomarker_name": "RAS",
+            "binary_status": "-ve",
+            "status_desc": "wild-type"
+          },
+          {
+            "biomarker_name": "CEA",
+            "status_desc": "decreased from 245 to 180"
+          }
+        ]
+      },
+      "cancer_timeline": [
+        {
+          "type": "had_surgical_treatment_performed",
+          "value": "Right hemicolectomy",
+          "year": "2024",
+          "month": "03"
+        },
+        {
+          "type": "started_new_systemic_treatment",
+          "value": "Completed 3 cycles FOLFOX with poor tolerance"
+        },
+        {
+          "type": "experienced_treatment_toxicity_or_complication",
+          "value": "grade 3 peripheral neuropathy and persistent nausea requiring two hospital admissions"
+        },
+        {
+          "type": "got_radiology_result",
+          "value": "most recent CT scan shows stable peritoneal disease"
+        },
+        {
+          "type": "experienced_cancer_disease_stability",
+          "value": "most recent CT scan shows stable peritoneal disease"
+        },
+        {
+          "type": "got_laboratory_result",
+          "value": "CEA has decreased from 245 to 180"
+        },
+        {
+          "type": "got_laboratory_result",
+          "value": "Blood tests, including liver and renal function, are within protocol parameters"
+        }
+      ]
+    },
+    "other_cancers": [],
+    "patient_findings": [
+      {
+        "type": "symptom_finding",
+        "value": "grade 3 peripheral neuropathy"
+      },
+      {
+        "type": "symptom_finding",
+        "value": "persistent nausea"
+      },
+      {
+        "type": "physical_finding",
+        "value": "mild abdominal distension but no tenderness"
+      },
+      {
+        "type": "physical_finding",
+        "value": "No peripheral neuropathy evident following resolution of FOLFOX-related symptoms"
+      },
+      {
+        "type": "physical_finding",
+        "value": "Blood pressure 132/78, pulse 84 regular"
+      },
+      {
+        "type": "physical_finding",
+        "value": "weight 72.4kg (stable)"
+      },
+      {
+        "type": "functional_finding",
+        "value": "Performance status is 1"
+      }
+    ],
+    "clinical_summary": {
+      "summary": "Patient has metastatic HER2-positive ascending colon adenocarcinoma with peritoneal disease, diagnosed in March 2024. After right hemicolectomy and poor tolerance to FOLFOX, patient is now enrolled in the HERACLES-B clinical trial for Trastuzumab-Deruxtecan. Recent imaging shows stable disease and CEA has decreased."
+    },
+    "future_plan": [
+      {
+        "type": "planned_investigation",
+        "value": "Baseline CT chest/abdomen/pelvis and cardiac echo arranged for next week"
+      },
+      {
+        "type": "planned_treatment",
+        "value": "First trial treatment planned for 15 April 2024 pending final central confirmation of eligibility"
+      }
+    ]
+  }
+}
