@@ -1,0 +1,12 @@
+{
+    "_index": "epic_notes",
+    "_id": "2",
+    "_score": null,
+    "_source": {
+      "document_Content": "MDM: March 2024\n\nOutcome\n\nPatient under [redacted name] and has recently be admitted to improve with metastatic rectal tumour staging T3N0M0. Your thickening on the CT scan extends to the lower rectum with only 3.3 cm to the anorectal junction. As this extends quite low not suitable for a colonic stent and would suggest a defunctioning loop stoma.\n\nNotes were taken by:\n[redacted name]",
+      "patient_SourceId": 2342984,
+      "patient_EpicId": "DFHIHVG",
+      "patient_NhsNumber": 192838748787,
+      "activity_Department": "CANCER CARE"
+    }
+  }
