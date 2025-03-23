@@ -3,6 +3,7 @@ import os
 import re
 import requests
 from pathlib import Path
+import time
 
 """
 main.py
@@ -102,7 +103,9 @@ def process_document_content(document_content, api_url="http://localhost:8080/v1
     Process document content through the fine-tuned LLM
     """
 
+    preprocess_start = time.time()
     text_to_process = extract_epic_section(document_content)
+    preprocess_time = time.time() - preprocess_start
 
     if text_to_process is None:
         print("No relevant section found in document: skipping")
@@ -120,6 +123,7 @@ def process_document_content(document_content, api_url="http://localhost:8080/v1
     }
 
     try:
+        llm_start = time.time()
         response = requests.post(api_url, headers=headers, data=json.dumps(payload))
         response.raise_for_status()
 
@@ -128,6 +132,10 @@ def process_document_content(document_content, api_url="http://localhost:8080/v1
 
         # extract JSON from response
         extracted_json = extract_json_from_text(response_content)
+        llm_time = time.time() - llm_start
+
+        print(f"Preproc time: {preprocess_time:.1f}s")
+        print(f"vLLM time: {llm_time:.1f}s")
 
         return extracted_json
     except Exception as e:

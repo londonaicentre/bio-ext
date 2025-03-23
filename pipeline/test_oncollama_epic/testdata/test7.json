@@ -1,0 +1,12 @@
+{
+    "_index": "epic_notes",
+    "_id": "17",
+    "_score": null,
+    "_source": {
+      "document_Content": "Patient information headings. Patient name: James Smith. Diagnosis:\nMetastatic ascending colon adenocarcinoma with signet ring features and peritoneal disease\nDiagnosed March 2024\nHER2 positive, RAS wild-type\n\nPrevious Treatment:\nRight hemicolectomy 15 March 2024\nCompleted 3 cycles FOLFOX with poor tolerance\n\nClinical Trial Status:\nScreening visit completed for HERACLES-B trial of Trastuzumab-Deruxtecan in HER2-positive metastatic colorectal cancer\n\nCurrent Situation:\nI reviewed [redacted name] today who attended with his wife for clinical trial enrollment. He has unfortunately experienced significant toxicity from standard FOLFOX chemotherapy, with grade 3 peripheral neuropathy and persistent nausea requiring two hospital admissions. Despite these challenges, his most recent CT scan shows stable peritoneal disease, and his CEA has decreased from 245 to 180.\n\nTrial Eligibility:\nHe meets all inclusion criteria for the HERACLES-B trial. HER2 positivity has been confirmed on both immunohistochemistry (3+) and FISH testing. RAS wild-type status confirmed. Baseline cardiac function is normal with LVEF 62%. All screening blood tests, including liver and renal function, are within protocol parameters.\n\nTrial Discussion:\nI have had a detailed discussion with [redacted name] and his wife about the HERACLES-B trial. We reviewed the schedule of visits, procedures, and potential side effects of Trastuzumab-Deruxtecan. He understands this is a Phase II trial evaluating efficacy in HER2-positive colorectal cancer. The requirement for regular cardiac monitoring and risk of pneumonitis were specifically discussed. He has been provided with the full trial information sheet and emergency contact details.\n\nBaseline Assessments:\nPerformance status is 1, weight 72.4kg (stable). Blood pressure 132/78, pulse 84 regular. Examination shows mild abdominal distension but no tenderness. No peripheral neuropathy evident following resolution of FOLFOX-related symptoms.\n\nPlan:\nTrial consent forms completed today. Baseline CT chest/abdomen/pelvis and cardiac echo arranged for next week. First trial treatment planned for 15 April 2024 pending final central confirmation of eligibility.",
+      "patient_SourceId": 123984,
+      "patient_EpicId": "HOKOSHDVBM",
+      "patient_NhsNumber": 12039866,
+      "activity_Department": "CANCER CARE"
+    }
+  }
