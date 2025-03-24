@@ -14,10 +14,13 @@ connect_cogstack = st.cache_resource(dbaccess.connect_cogstack)
 list_and_fetch_data = st.cache_data(dbaccess.list_and_fetch_data)
 global_overview = st.cache_data(transforms.global_overview)
 characterisedf = st.cache_data(transforms.characterisedf)
-
+mappingtypes = st.cache_data(dbaccess.get_mapping_types)
+get_top_10kw = st.cache_data(dbaccess.get_top_10kw)
+get_date_ranges = st.cache_data(dbaccess.get_date_ranges)
 # CONNECT COGSTACK, INSTANTIATE OBJECTS
 config = load_config("utils/config_dash.yaml")
 es = connect_cogstack()
+kwremovelist = config["escapekwlist"]
 
 # STREAMLIT APP UI 
 
@@ -54,8 +57,30 @@ for i in all_df.keys():
         st.markdown("#### Columns")
         st.write(mapping[i]["mappings"])
         characterisedf(_data=_df)
-        #resultsum = get_summary(_es=es,index=i)
-        #st.write(resultsum)
+        columntypes = mappingtypes(_es=es,indexname=i)
+        st.markdown("### Columns grouped by datatypes ")
+        st.write(columntypes)
+        try: 
+            kw = columntypes["keyword"]
+            cleankw = [i for i in kw if i not in kwremovelist]
+            datefields = columntypes["date"]
+            if not kw:
+                st.write("{i} has no keywords")
+            else: 
+                st.markdown("### Top levels and counts")
+                st.write(kw)
+                top10 = get_top_10kw(_es=es,indexname=i,fieldlist=cleankw)
+                st.write(top10)
+            if not datefields:
+                st.write("{i} has no datecolumns")
+            else: 
+                dateranges = get_date_ranges(_es=es,indexname=i,fieldlist=datefields)
+                st.markdown("### date ranges")
+                st.write(dateranges)
+        except Exception as e:
+            st.write(f"{e} error for index {i}")
+        
+        
         
 st.write("END OF THE PAGE")
 

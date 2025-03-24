@@ -27,6 +27,9 @@ I will probably refactor to make it more maintainable with proper folder structu
 - I will probably make a bash script to help install easier.
 - best to transition to TOML from yaml 
 - ideally gstt_elastic_directory.md will sync with copy from `sde_aic_internal_docs`
+- could do with better caching [now caching is only works partially after refactoring]
+- ideally cache global vars at hello.py
+- need to wrap Try to the functions so it doesnt break 
 
 ## Dir structure 
 ```bash

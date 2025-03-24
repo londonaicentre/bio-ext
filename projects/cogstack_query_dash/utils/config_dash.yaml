@@ -18,3 +18,29 @@ learnings: |
 all_cols_query:
   size: "__PLACEHOLDER__"
   query: {"match_all":{}}
+
+
+kw_query: 
+  size: 0
+  aggs: {
+    "top_terms":{
+      "terms": {
+        "field": field,
+        "size":10
+      }
+    }
+  }
+
+escapekwlist: 
+  - activity_VisitNumber
+  - activity_V
+  - patient_MRN
+  - patient_NhsNumber
+  - patient_SourceId
+  - patient_HospitalNumber
+  - patient_HospitalNumber_GSTT
+  - id
+  - document_FileName
+  - document_AttId
+  - document_OriginalFilePath
+  - document_SourceId
