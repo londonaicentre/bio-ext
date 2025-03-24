@@ -1,0 +1,13 @@
+[project]
+name = "cogstack-query-dash"
+version = "0.1.0"
+description = "streamlit dash app to help viz queries and come up with query strings"
+readme = "README.md"
+requires-python = ">=3.11.2"
+dependencies = [
+    "dotenv",
+    "elasticsearch",
+    "pandas",
+    "streamlit",
+    "yaml"
+]
