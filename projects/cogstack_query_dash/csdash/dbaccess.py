@@ -175,3 +175,62 @@ def get_date_ranges(_es,indexname,fieldlist):
         }
         
     return result
+
+
+def get_num_stats(_es,indexname,fieldlist):
+    """queries numeric columsn and do basic analysis
+
+    Args:
+        _es (es): elastic search conn object
+        indexname (str): name of index 
+        fieldlist (list): list of fields to query that are numeric objects
+        query (json): obtained from config_dash.yaml json string kw
+    """
+    result = {}
+    try: 
+        for field in fieldlist:
+            query = {
+                "size":0,
+                "aggs":{
+                    "min_value":{
+                        "min":{
+                            "field": field,
+                        }
+                    },
+                    "max_value":{
+                        "max":{
+                            "field": field
+                        }
+                    },
+                    "percentiles":{
+                        "percentiles":{
+                            "field": field,
+                            "percents":[25,50,75]
+                        }
+                    }
+                }
+            }
+        
+            response = _es.search(index=indexname, body = query)
+            min_value = response["aggregations"]["min_value"]["value"]
+            max_value = response["aggregations"]["max_value"]["value"]
+            percentiles = response["aggregations"]["percentiles"]["values"]
+            
+            five_num_sum = {
+                "min":min_value,
+                "q1_25":percentiles["25.0"],
+                "q2_50": percentiles["50.0"],
+                "q3_75": percentiles["75.0"],
+                "max":max_value
+            }
+        
+            result[field]= five_num_sum
+    except KeyError:
+        print(f"Warning: num{field} not found in index {indexname} or is wrong dtype")
+        result[field] = None
+        
+    except Exception as e:
+        print(f"error processing {field} in index {indexname} as {e}")
+        result[field] = None
+        
+    return result

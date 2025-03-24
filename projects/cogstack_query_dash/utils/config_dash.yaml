@@ -33,7 +33,6 @@ kw_query:
 
 escapekwlist: 
   - activity_VisitNumber
-  - activity_V
   - patient_MRN
   - patient_NhsNumber
   - patient_SourceId
