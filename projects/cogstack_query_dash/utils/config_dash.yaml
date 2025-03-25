@@ -1,45 +1,144 @@
-intro: This simple dash helps familiarise cogstack indexes to users. 
-instructions: Please select the number of documents (i.e., rows) that you want to be read into as a sample.
-start2: See here how the data looks like!
-hellotext: Teddy build this to make his life easier.
-learnings: |
-    ### Learnings / Bugs 
-    -  For example, Elastic Search has a data type "text" vs "keyword". Keywords are almost like a category but not quite. It is not broken down
-            any further and analysed by Elastic Search. Elastic Search breaks down **text**. Therefore, you can use fuzzy matching for text column but not for keyword columns.
-            See more here [Text vs Keyword by Elastic.co](https://www.elastic.co/blog/strings-are-dead-long-live-strings)
-            
-    - Elasticsearch API for large searches need scroll function
-    - Streamlit converts pandas to pyarrow. there is an error regarding that. i will fix later.
-    - Elastic search column names are not columns but called "fields".
-    - future features [use nltk or spacy --spacy has some issues with version conflict. nltk has difficulty downloading onto streamlit environment to remove stop words]
-    - append column data types and if keywrod or categorical, append min  max, value counts etc
-
-
 all_cols_query:
-  size: "__PLACEHOLDER__"
-  query: {"match_all":{}}
+  query:
+    match_all: {}
+  size: __PLACEHOLDER__
+  
+escapekwlist:
+- activity_AdmittingProvider
+- activity_AdmittingProviderDurableKey
+- activity_AttendanceNumber
+- activity_AttendanceSourceId
+- activity_DepartmentKey
+- activity_DepartmentSpecialtyAbbreviation
+- activity_EncounterEpicCsn
+- activity_EpisodeCreatedBy
+- activity_EpisodeId
+- activity_EpisodeNumber
+- activity_EpisodeUpdatedBy
+- activity_EpisodeSourceId
+- activity_ProviderDurableKey
+- activity_Provider
+- activity_ReferralCreatedBy
+- activity_ReferralId
+- activity_ReferralUpdatedBy
+- activity_ReferrerCCGCode
+- activity_ReportedBy
+- activity_ReportedById
+- activity_SourceId
+- activity_SpellCreatedBy
+- activity_SpellId
+- activity_SpellNumber
+- activity_SpellUpdatedBy
+- activity_VisitCareProviderId
+- activity_VisitCreatedBy
+- activity_VisitNumber
+- activity_VisitSourceId
+- activity_VisitUpdatedBy
+- document_AccessToken
+- document_AccessionNumber
+- document_AncillaryReferenceId
+- document_AttId
+- document_Author
+- document_AuthoringEmployeeDurableKey
+- document_CosigningEmployee
+- document_CosigningEmployeeDurableKey
+- document_annotation_id
+- document_CnId
+- document_CaseName
+- document_CountName
+- document_LabCaseEpicId
+- document_LabOrderEpicId
+- document_LabResultEpicId
+- document_LabSpecimenEpicId
+- document_LabSpecimenKey
+- document_PatientSourceDataDurableKey
+- document_ProcedureKey
+- document_ProviderName
+- document_SpecimenName
+- document_ConfirmStaffName
+- document_ContentType
+- document_CreatedBy
+- document_EdlId
+- document_EpicId
+- document_FileName
+- document_FillerDocumentId
+- document_FillerFacilityId
+- document_FirstProcedureKey
+- document_ImagingId
+- document_ImagingOrderEpicId
+- document_KTreeItemId
+- document_KTreeRootId
+- document_LetterMakerId
+- document_MediaCreatedBy
+- document_MediaUpdatedBy
+- document_NoteId
+- document_OrderingEncounterKey
+- document_OrderEntryFormId
+- document_OrderId
+- document_RequestedDate
+- document_OriginalFilePath
+- document_OriginalProcedureKey
+- document_OriginatingOrderEpicId
+- document_ParentId
+- document_Path
+- document_Id
+- document_PerformingEncounterKey
+- document_ProblemListEpicId
+- document_Reference
+- document_ReportedByUser
+- document_ResourceKey
+- document_SourceId
+- document_StopDate
+- document_SpecimenNumber
+- document_TrustId
+- document_UpdatedBy
+- document_Version
+- document_VersionGroup
+- document_sourcedb
+- id
+- patient_CCGNumber
+- patient_CreatedBy
+- patient_DurableKey
+- patient_EpicId
+- patient_FamilyTrustId
+- patient_FirstName
+- patient_HospitalNumber
+- patient_HospitalNumber_GSTT
+- patient_HospitalNumber_LGT
+- patient_Id
+- patient_LastName
+- patient_MRN
+- patient_MiddleName
+- patient_NhsNumber
+- patient_PersonId
+- patient_SourceId
+- patient_UpdatedBy
 
+hellotext: Teddy build this to make his life easier.
 
-kw_query: 
+instructions: Please select the number of documents (i.e., rows) that you want to
+  be read into as a sample.
+
+intro: This simple dash helps familiarise cogstack indexes to users.
+
+kw_query:
+  aggs:
+    top_terms:
+      terms:
+        field: field
+        size: 10
   size: 0
-  aggs: {
-    "top_terms":{
-      "terms": {
-        "field": field,
-        "size":10
-      }
-    }
-  }
 
-escapekwlist: 
-  - activity_VisitNumber
-  - patient_MRN
-  - patient_NhsNumber
-  - patient_SourceId
-  - patient_HospitalNumber
-  - patient_HospitalNumber_GSTT
-  - id
-  - document_FileName
-  - document_AttId
-  - document_OriginalFilePath
-  - document_SourceId
+learnings: "### Learnings / Bugs \n-  For example, Elastic Search has a data type\
+  \ \"text\" vs \"keyword\". Keywords are almost like a category but not quite. It\
+  \ is not broken down\n        any further and analysed by Elastic Search. Elastic\
+  \ Search breaks down **text**. Therefore, you can use fuzzy matching for text column\
+  \ but not for keyword columns.\n        See more here [Text vs Keyword by Elastic.co](https://www.elastic.co/blog/strings-are-dead-long-live-strings)\n\
+  \        \n- Elasticsearch API for large searches need scroll function\n- Streamlit\
+  \ converts pandas to pyarrow. there is an error regarding that. i will fix later.\n\
+  - Elastic search column names are not columns but called \"fields\".\n- future features\
+  \ [use nltk or spacy --spacy has some issues with version conflict. nltk has difficulty\
+  \ downloading onto streamlit environment to remove stop words]\n- append column\
+  \ data types and if keywrod or categorical, append min  max, value counts etc\n"
+
+start2: See here how the data looks like!
