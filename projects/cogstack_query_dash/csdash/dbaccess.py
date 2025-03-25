@@ -19,7 +19,7 @@ def connect_cogstack():
     return session.es
 
 
-def fetch_sample_data(es, query, index_name):
+def fetch_query(es, query, index_name):
     """this function  need es object from elastic search
     once initiated, use this function to send queries to server.
 
@@ -36,7 +36,7 @@ def fetch_sample_data(es, query, index_name):
     return _df
 
 
-def list_and_fetch_data(_es, query):
+def list_indexes(_es):
     """iterate over each cogstack index and extract data.
 
     Args:
@@ -47,12 +47,24 @@ def list_and_fetch_data(_es, query):
         results: dict object which holds dataframes
     """
     cogstack_indexes = list(_es.indices.get_mapping().keys())
+    return cogstack_indexes
+
+def fetch_sampledata(_es,indexlist,query):
+    """iterate over each cogstack index and extract data.
+
+    Args:
+        es (elastic search session object): need to be initiated.
+
+    Returns:
+        cogstack_indexes: index name as list
+        results: dict object which holds dataframes
+    """
     results = {}
-    for index in cogstack_indexes:
-        _data = fetch_sample_data(es=_es,query=query, index_name=index)
+    for index in indexlist:
+        _data = fetch_query(es=_es,query=query, index_name=index)
         results[index] = _data
         print(f"{index} is appended to dict.")
-    return cogstack_indexes, results
+    return results
 
 def get_mapping_types(_es,indexname):
     """ will extract type of fields and returns a dict. 

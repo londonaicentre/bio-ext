@@ -112,10 +112,10 @@ escapekwlist:
 - patient_PersonId
 - patient_SourceId
 - patient_UpdatedBy
-hellotext: Teddy build this to make his life easier.
+hellotext: Teddy build this to make his life easier. This dash helps with EDA and query building.
 instructions: Please select the number of documents (i.e., rows) that you want to
   be read into as a sample.
-intro: This simple dash helps familiarise cogstack indexes to users.
+intro: Cogstack Quick Dash
 kw_query:
   aggs:
     top_terms:
@@ -123,7 +123,7 @@ kw_query:
         field: field
         size: 10
   size: 0
-learnings: "### Learnings / Bugs \n-  For example, Elastic Search has a data type\
+learnings: "\n-  For example, Elastic Search has a data type\
   \ \"text\" vs \"keyword\". Keywords are almost like a category but not quite. It\
   \ is not broken down\n        any further and analysed by Elastic Search. Elastic\
   \ Search breaks down **text**. Therefore, you can use fuzzy matching for text column\

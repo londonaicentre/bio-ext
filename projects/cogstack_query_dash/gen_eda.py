@@ -50,35 +50,39 @@ def generate_eda(detail=False):
             indexsize_gb = indexsize / (1024 * 1024 * 1024)
             index_description["index_size"] = indexsize_gb
 
-            print(f"index description problem of {i}")
+            print(f"Index description completed for {i}")
 
             fields = es.indices.get_mapping(index=i)
             index_description["fields"] = fields
-            print(f"fields mapping problem of {i}")
+            print(f"Fields mapping completed for {i}")
 
             mappings = dbaccess.get_mapping_types(_es=es, indexname=i)
             index_description["mappings_by_type"] = mappings
-            print(f" mapping type access problem of {i}")
+            print(f"Mapping typed for {i}")
 
             # try loop for eda on keyword data types
             try:
                 keyword_fields = mappings["keyword"]
-                if not details:
+                print(f"{i} has keyword_fields")
+                if not detail:
+                    print("efficient summarising")
                     keyword_fields_escaped = [
                         field for field in keyword_fields if field not in escapekws
                     ]
                     top10 = dbaccess.get_top_10kw(
                         _es=es, indexname=i, fieldlist=keyword_fields_escaped
                     )
+                    index_description["keyword_fields_description"] = top10
+                    print(f"{i} has keywords and is on EFFICIENT option.")
                 else:
                     top10 = dbaccess.get_top_10kw(
                         _es=es, indexname=i, fieldlist=keyword_fields
                     )
-                index_description["keyword_fields_description"] = top10
-                print(f"{i} has keyword Yay!")
-            except:
+                    index_description["keyword_fields_description"] = top10
+                    print(f"{i} has keyword field detailed option!")
+            except Exception as e:
                 index_description["keyword_fields_none"] = True
-                print(f"{i} does NOT have keyword")
+                print(f"{i} does NOT have keywords and error out as {e}")
 
             # try loop for eda on date data types
             try:
@@ -88,9 +92,9 @@ def generate_eda(detail=False):
                 )
                 index_description["date_fields_ranges"] = dateranges
                 print(f"{i} have datefields")
-            except:
+            except Exception as e:
                 index_description["date_fields_none"] = True
-                print(f"{i} do not have datefields")
+                print(f"{i} do not have datefields and error as {e}")
 
             # try loop for eda on numeric data types
             try:
@@ -100,14 +104,14 @@ def generate_eda(detail=False):
                 numsumm = dbaccess.get_num_stats(_es=es, indexname=i, fieldlist=numcols)
                 index_description["numeric_columns_summary"] = numsumm
                 print(f"{i} have numeric cols")
-            except:
+            except Exception as e:
                 index_description["numeric_cols_none"] = True
-                print(f"{i} do not have numeric columns")
+                print(f"{i} do not have numeric columns and error out with {e}")
 
             receptacle.append(index_description)
 
         except Exception as e:
-            print(f"{e}")
+            print(f"Some random error on outside exception loop {e}")
 
     return receptacle
 
@@ -128,7 +132,6 @@ if __name__ == "__main__":
     # argument for whether details needed or not
     parser.add_argument(
         "--detail",
-        type=bool,
         action="store_true",
         help="When --detail flag is present, then it will summarise all columns. *HIGHLY INEFFICIENT*",
     )

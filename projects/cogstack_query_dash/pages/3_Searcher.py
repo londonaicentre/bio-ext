@@ -37,7 +37,7 @@ st.json(txt)
 
 # Visualise result
 st.markdown("### RESULT")
-df = dbaccess.fetch_sample_data(es=es, query=txt, index_name=indexoption)
+df = dbaccess.fetch_query(es=es, query=txt, index_name=indexoption)
 st.write("### SEARCH OUTPUT")
 st.write(f" the size of output: {df.shape}")
 st.write("the data(note size default to 10):")

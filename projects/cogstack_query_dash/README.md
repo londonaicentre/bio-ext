@@ -1,8 +1,14 @@
 # Cogstack Dash 
 
 ## What it does
+
+>Streamlit dashboard
 - query and EDA cogstack database 
-- help you simplify the workflow 
+- help you simplify the workflow
+- run Hello.py
+
+> EDA script
+- yaml generator
 
 ## Requirements
 - will require custom `.env` with own secrets
