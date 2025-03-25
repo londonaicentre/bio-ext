@@ -4,6 +4,9 @@ import os
 from csdash import dbaccess, transforms
 import pandas as pd
 
+# TODO: refactor session state checkers
+# TODO: make a small lambda that pretty prints headers
+#
 # ENVIRON 
 # Load existing state objects
 if "csindexes" in st.session_state:
@@ -47,47 +50,48 @@ def display_dataframe_overview(index,_es,kwremovelist):
     with st.expander(headerstring):
         _df = all_df[i]
         mapping = _es.indices.get_mapping(index = i)
-        st.markdown("#### Columns")
+        st.markdown(f"#### Fields in {i}")
         st.write(mapping[i]["mappings"])
-        characterisedf(_data=_df)
-        columntypes = mappingtypes(_es=es,indexname=i)
-        st.markdown("### Columns grouped by datatypes ")
+        st.markdown("### Fields grouped by datatypes ")
         st.write(columntypes)
+        columntypes = mappingtypes(_es=es,indexname=i)
         process_columns(index,columntypes,kwremovelist)
+        characterisedf(_data=_df)
     return 
 
 def process_columns(index,columntypes,kwremovelist):
     try: 
         kw = columntypes["keyword"]
-        cleankw = [i for i in kw if i not in kwremovelist]
+        cleankw = [field for field in kw if field not in kwremovelist]
         datefields = columntypes["date"]
         numcols = list(
                     set(list(columntypes["scaled_float"]) + list(columntypes["integer"]))
                 )
         #keywords
-        if kw:
-                st.write("{i} has no keywords")
+        if not kw:
+                st.write("{index} has no keywords")
         else: 
-            st.markdown("### Top levels and counts")
+            st.markdown("### Top categories and counts in fields")
             st.write(kw)
-            top10 = get_top_10kw(_es=es,indexname=i,fieldlist=cleankw)
+            top10 = get_top_10kw(_es=es,indexname=index,fieldlist=cleankw)
             st.write(top10)
         # for dates
-        if datefields:
-            st.write("{i} has no datecolumns")
+        if not datefields:
+            st.write("{index} has no datecolumns")
         else: 
-            dateranges = get_date_ranges(_es=es,indexname=i,fieldlist=datefields)
-            st.markdown("### date ranges")
+            dateranges = get_date_ranges(_es=es,indexname=index,fieldlist=datefields)
+            st.markdown("### Date Ranges")
             st.write(dateranges)
         #for numeric columns
-        if numcols: 
-            st.markdown("### Numeric column summaries")
-            numsumm = get_num_stats(_es=es, indexname=i, fieldlist=numcols)
-            st.write(numsumm)
+        if not numcols: 
+            st.write("No numeric columns in {index}")
         else:
-            st.write("no numeric columns here")
+            st.markdown("### Numeric column summaries")
+            numsumm = get_num_stats(_es=es, indexname=index, fieldlist=numcols)
+            st.write(numsumm)
     except Exception as e:
         st.write(f"{e} error for index {i}")
+    return 
 
 
 # STREAMLIT APP UI 
@@ -97,9 +101,6 @@ st.markdown(config["instructions"])
 # allow user to select sample size.
 samplesize = st.number_input("Select docs size, default 100, max 10k",max_value=10000, value=100)
 config["all_cols_query"]["size"] = samplesize
-
-# saving es object in state
-
 
 # collect sample data and save index into state
 all_df = fetch_sampledata(_es=es, indexlist = csindexes , query=config["all_cols_query"])
