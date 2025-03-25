@@ -53,8 +53,8 @@ def display_dataframe_overview(index,_es,kwremovelist):
         st.markdown(f"#### Fields in {i}")
         st.write(mapping[i]["mappings"])
         st.markdown("### Fields grouped by datatypes ")
-        st.write(columntypes)
         columntypes = mappingtypes(_es=es,indexname=i)
+        st.write(columntypes)
         process_columns(index,columntypes,kwremovelist)
         characterisedf(_data=_df)
     return 
