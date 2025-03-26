@@ -135,3 +135,52 @@ learnings: "\n-  For example, Elastic Search has a data type\
   \ downloading onto streamlit environment to remove stop words]\n- append column\
   \ data types and if keywrod or categorical, append min  max, value counts etc\n"
 start2: See here how the data looks like!
+examplequery: {
+    "_source": [
+        "id",
+        "document_EpicId",
+        "activity_Date",
+        "document_CreatedWhen",
+        "document_UpdatedWhen",
+        "patient_NHSNumber",
+        "patient_DurableKey",
+        "activity_EncounterEpicCsn",
+        "activity_PatientAdministrativeCategory",
+        "activity_PatientClass",
+        "activity_Type",
+        "activity_VisitClass",
+        "activity_VisitType",
+        "activity_DepartmentSpecialty",
+        "activity_ChiefComplaint",
+        "document_Content",
+        "document_Name",
+        "document_AuthorType",
+        "document_Service",
+        "document_Status"
+    ],
+    "query": {
+        "bool": {
+            "must": [],
+            "filter": [
+                {
+                    "match_phrase": {
+                        "activity_Type": "Clinic/Practice Visit"
+                    }
+                }
+            ],
+            "should": [],
+            "must_not": [
+                {
+                    "match_phrase": {
+                        "document_Name.keyword": "Appointment Note"
+                    }
+                },
+                {
+                    "match_phrase": {
+                        "document_Name.keyword": "Nursing Note"
+                    }
+                }
+            ]
+        }
+    }
+}
