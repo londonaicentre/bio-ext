@@ -51,10 +51,10 @@ def display_dataframe_overview(index,_es,kwremovelist):
         _df = all_df[i]
         mapping = _es.indices.get_mapping(index = i)
         st.markdown(f"#### Fields in {i}")
-        st.write(mapping[i]["mappings"])
-        st.markdown("### Fields grouped by datatypes ")
+        st.json(mapping[i]["mappings"],expanded=False)
+        st.markdown("#### Fields grouped by datatypes ")
         columntypes = mappingtypes(_es=es,indexname=i)
-        st.write(columntypes)
+        st.json(columntypes,expanded=False)
         process_columns(index,columntypes,kwremovelist)
         characterisedf(_data=_df)
     return 
@@ -71,24 +71,23 @@ def process_columns(index,columntypes,kwremovelist):
         if not kw:
                 st.write("{index} has no keywords")
         else: 
-            st.markdown("### Top categories and counts in fields")
-            st.write(kw)
+            st.markdown("#### Top categories and counts in fields")
             top10 = get_top_10kw(_es=es,indexname=index,fieldlist=cleankw)
-            st.write(top10)
+            st.json(top10,expanded=False)
         # for dates
         if not datefields:
             st.write("{index} has no datecolumns")
         else: 
             dateranges = get_date_ranges(_es=es,indexname=index,fieldlist=datefields)
-            st.markdown("### Date Ranges")
-            st.write(dateranges)
+            st.markdown("#### Date Ranges")
+            st.json(dateranges,expanded=False)
         #for numeric columns
         if not numcols: 
             st.write("No numeric columns in {index}")
         else:
-            st.markdown("### Numeric column summaries")
+            st.markdown("#### Numeric column summaries")
             numsumm = get_num_stats(_es=es, indexname=index, fieldlist=numcols)
-            st.write(numsumm)
+            st.json(numsumm,expanded=False)
     except Exception as e:
         st.write(f"{e} error for index {i}")
     return 

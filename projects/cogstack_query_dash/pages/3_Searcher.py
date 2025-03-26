@@ -5,10 +5,10 @@ from csdash import dbaccess
 #
 
 # Load existing state objects
-if "indexlist" in st.session_state:
-    cogstack_indexes = st.session_state["indexlist"]
+if "csindexes" in st.session_state:
+    csindexes = st.session_state["csindexes"]
 else:
-    st.write("cogstack_indexes not available, run page Indexes first")
+    st.write("csindexes not available, run page Indexes first")
 
 if "es" in st.session_state:
     es = st.session_state["es"]
@@ -19,7 +19,7 @@ else:
 # Select which index to do searches on
 indexoption = st.selectbox(
     "Select cogstack index to search:",
-    cogstack_indexes,
+    csindexes,
     index=None,
     placeholder="Select index ...",
 )
@@ -32,7 +32,7 @@ txt = st.text_area("query", "here is your query")
 
 # Visualise query
 st.markdown("### JSON visualisation of the query")
-st.json(txt)
+st.json(txt,expanded=False)
 
 
 # Visualise result
@@ -41,4 +41,4 @@ df = dbaccess.fetch_query(es=es, query=txt, index_name=indexoption)
 st.write("### SEARCH OUTPUT")
 st.write(f" the size of output: {df.shape}")
 st.write("the data(note size default to 10):")
-st.write(df)
+st.dataframe(df)
