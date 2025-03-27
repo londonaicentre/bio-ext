@@ -31,7 +31,20 @@ class MCTDataset(MCTObj):
 @dataclass
 class MCTConceptDB(MCTObj):
     name: str=None
-    conceptdb_file: str=None
+    conceptdb_file: str=None    
+    
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        if value is not None:
+            if not value[0].islower():
+                raise ValueError("Name must start with a lowercase letter")
+            if not value.replace('_', '').isalnum():
+                raise ValueError("Name must contain only alphanumeric characters and underscores")
+        self._name = value
 
     def __str__(self):
         return f'{self.id} : {self.name} \t {self.conceptdb_file}'
@@ -235,6 +248,18 @@ class MedCATTrainerSession:
             raise MCTUtilsException(f'Failed to create project with name: {name}', resp.text)
         
     def create_dataset(self, name: str, dataset_file: str):
+        """Create a new dataset in the MedCATTrainer session.
+
+        Args:
+            name (str): The name of the dataset.
+            dataset_file (str): The path to the dataset file.
+
+        Raises:
+            MCTUtilsException: If the dataset creation fails
+
+        Returns:
+            MCTDataset: The created dataset
+        """
         resp = requests.post(f'{self.server}/api/datasets/', headers=self.headers,
                              data={'name': name},
                              files={'original_file': open(dataset_file, 'rb')})
@@ -245,6 +270,18 @@ class MedCATTrainerSession:
             raise MCTUtilsException(f'Failed to create dataset with name: {name}', resp.text)
 
     def create_user(self, username: str, password):
+        """Create a new user in the MedCATTrainer session.
+
+        Args:
+            username (str): The username of the new user.
+            password (str): The password of the new user.
+
+        Raises:
+            MCTUtilsException: If the user creation fails
+
+        Returns:
+            MCTUser: The created user
+        """
         payload = {
             'username': username,
             'password': password
@@ -257,7 +294,15 @@ class MedCATTrainerSession:
             raise MCTUtilsException(f'Failed to create new user with username: {username}', resp.text)
 
     def create_medcat_model(self, cdb:MCTConceptDB, vocab: MCTVocab):
-        
+        """Create a new MedCAT cdb and vocab model in the MedCATTrainer session.
+
+        Args:
+            cdb (MCTConceptDB): The concept database to be created.
+            vocab (MCTVocab): The vocabulary to be created.
+
+        Raises:
+            MCTUtilsException: If the model creation fails
+        """        
         resp = requests.post(f'{self.server}/api/concept-dbs/', headers=self.headers,
                              data={'name': cdb.name},
                              files={'cdb_file': open(cdb.conceptdb_file, 'rb')})
@@ -279,6 +324,14 @@ class MedCATTrainerSession:
         return cdb, vocab
 
     def create_medcat_model_pack(self, model_pack: MCTModelPack):
+        """Create a new MedCAT model pack in the MedCATTrainer session.
+
+        Args:
+            model_pack (MCTModelPack): The model pack to be created.
+
+        Raises:
+            MCTUtilsException: If the model pack creation fails
+        """        
         resp = requests.post(f'{self.server}/api/modelpacks/', headers=self.headers,
                              data={'name': model_pack.name},
                              files={'model_pack': open(model_pack.model_pack_zip, 'rb')})
@@ -289,10 +342,20 @@ class MedCATTrainerSession:
             raise MCTUtilsException(f'Failed uploading model pack: {model_pack.model_pack_zip}', resp.text)
 
     def get_users(self) -> List[MCTUser]:
+        """Get all users in the MedCATTrainer instance.
+
+        Returns:
+            List[MCTUser]: A list of all users in the MedCATTrainer instance
+        """
         users = json.loads(requests.get(f'{self.server}/api/users/', headers=self.headers).text)['results']
         return [MCTUser(id=u['id'], username=u['username']) for u in users]
 
     def get_models(self) -> Tuple[List[str], List[str]]:
+        """Get all MedCAT cdb and vocab models in the MedCATTrainer instance.
+
+        Returns:
+            Tuple[List[MCTConceptDB], List[MCTVocab]]: A tuple of lists of all MedCAT cdb and vocab models in the MedCATTrainer instance
+        """
         cdbs = json.loads(requests.get(f'{self.server}/api/concept-dbs/', headers=self.headers).text)['results']
         vocabs = json.loads(requests.get(f'{self.server}/api/vocabs/', headers=self.headers).text)['results']
         mct_cdbs = [MCTConceptDB(id=cdb['id'], name=cdb['name'], conceptdb_file=cdb['cdb_file']) for cdb in cdbs]
@@ -300,21 +363,41 @@ class MedCATTrainerSession:
         return mct_cdbs, mct_vocabs
 
     def get_model_packs(self) -> List[MCTModelPack]:
+        """Get all MedCAT model packs in the MedCATTrainer instance.
+
+        Returns:
+            List[MCTModelPack]: A list of all MedCAT model packs in the MedCATTrainer instance
+        """
         resp = json.loads(requests.get(f'{self.server}/api/modelpacks/', headers=self.headers).text)['results']
         mct_model_packs = [MCTModelPack(id=mp['id'], name=mp['name'], model_pack_zip=mp['model_pack']) for mp in resp]
         return mct_model_packs
 
     def get_meta_tasks(self) -> List[MCTMetaTask]:
+        """Get all MedCAT meta tasks that have been created in the MedCATTrainer instance.
+
+        Returns:
+            List[MCTMetaTask]: A list of all MedCAT meta tasks in the MedCATTrainer instance
+        """
         resp = json.loads(requests.get(f'{self.server}/api/meta-tasks/', headers=self.headers).text)['results']
         mct_meta_tasks = [MCTMetaTask(name=mt['name'], id=mt['id']) for mt in resp]
         return mct_meta_tasks
     
     def get_rel_tasks(self) -> List[MCTRelTask]:
+        """Get all MedCAT relation tasks that have been created in the MedCATTrainer instance.
+
+        Returns:
+            List[MCTRelTask]: A list of all MedCAT relation tasks in the MedCATTrainer instance
+        """
         resp = json.loads(requests.get(f'{self.server}/api/relations/', headers=self.headers).text)['results']
         mct_rel_tasks = [MCTRelTask(name=rt['label'], id=rt['id']) for rt in resp]
         return mct_rel_tasks
     
     def get_projects(self) -> List[MCTProject]:
+        """Get all MedCAT annotation projects that have been created in the MedCATTrainer instance.
+
+        Returns:
+            List[MCTProject]: A list of all MedCAT annotation projects in the MedCATTrainer instance
+        """
         resp = json.loads(requests.get(f'{self.server}/api/project-annotate-entities/', headers=self.headers).text)['results']
         mct_projects = [MCTProject(id=p['id'], name=p['name'], description=p['description'], cuis=p['cuis'],
                                     dataset=MCTDataset(id=p['id']),
@@ -326,11 +409,24 @@ class MedCATTrainerSession:
         return mct_projects
     
     def get_datasets(self) -> List[MCTDataset]:
+        """Get all datasets that have been created in the MedCATTrainer instance.
+
+        Returns:
+            List[MCTDataset]: A list of all datasets in the MedCATTrainer instance
+        """
         resp = json.loads(requests.get(f'{self.server}/api/datasets/', headers=self.headers).text)['results']
         mct_datasets = [MCTDataset(name=d['name'], dataset_file=d['original_file'], id=d['id']) for d in resp]
         return mct_datasets
 
     def get_project_annos(self, projects: List[MCTProject]):
+        """Get the annotations for a list of projects. Schema is documented here: https://github.com/medcat/MedCATtrainer/blob/main/docs/api.md#download-annotations
+
+        Args:
+            projects (List[MCTProject]): A list of projects to get annotations for
+
+        Returns:
+            List[MCTProject]: A list of all projects with annotations
+        """ 
         if any(p.id is None for p in projects):
             raise MCTUtilsException('One or more project.id are None and all are required to download annotations')
         
@@ -371,9 +467,9 @@ if __name__ == '__main__':
     cdb_file = '<model_pack_path>/cdb.dat'
     vocab_file = '<model_pack_path>/vocab.dat'
     model_pack_zip = '<model_pack_path>.zip'
-    cdb, vocab = session.create_medcat_model(MCTConceptDB(name='test-cdb', conceptdb_file=cdb_file), 
-                                             MCTVocab(name='test-vocab', vocab_file=vocab_file))
-    session.create_medcat_model_pack(MCTModelPack(name='test-upload', model_pack_zip=model_pack_zip))
+    cdb, vocab = session.create_medcat_model(MCTConceptDB(name='test_cdb', conceptdb_file=cdb_file), 
+                                             MCTVocab(name='test_vocab', vocab_file=vocab_file))
+    session.create_medcat_model_pack(MCTModelPack(name='test_model_pack', model_pack_zip=model_pack_zip))
     
     cdb = cdbs[0]
     vocab = vocabs[0]
@@ -383,7 +479,7 @@ if __name__ == '__main__':
     
     # # directly with just names
     # p = session.create_project(name='test-upload-4', description='test-upload-2', cuis=['C0000001'], cuis_file=cuis_file, members=['admin'], 
-    #                            dataset='Test DS', concept_db='test-cdb', vocab='test-vocab', cdb_search_filter=cdb, meta_tasks=['Subject', 'Status', 'Time'],
+    #                            dataset='Test DS', concept_db='test_cdb', vocab='test_vocab', cdb_search_filter=cdb, meta_tasks=['Subject', 'Status', 'Time'],
     #                            rel_tasks=['Spatial'])
     
     # get the latest created project from the latest created project
