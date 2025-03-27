@@ -38,7 +38,7 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 |
 |pyproject.toml
 |README.md
-``` 
+```
 
 ## Getting Started
 
@@ -48,13 +48,13 @@ Requirements should be configured per project, using preferred virtual environme
 ```
 pip install -r requirements.txt
 ```
-As well as other packages, this must contain `-e ../../` to install bioext as an editable package.  
+As well as other packages, this must contain `-e ../../` to install bioext as an editable package.
 
 ### First time set-up (admin)
 
 (1) In `/deployment/`, create a copy of `.env.example` as `.env` and configure variables prior to docker-compose.
 
-(2) Pull in the mlflow-boto-docker Dockerfile by running `git submodule update --init.
+(2) Pull in the mlflow-boto-docker Dockerfile by running `git submodule update --init`.
 
 (3) From `/deployment/`, run:
 ```

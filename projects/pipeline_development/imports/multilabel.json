@@ -1,0 +1,22 @@
+[
+    {"text": "The patient has a long history of smoking and reports difficulty quitting.", "label": ["smoker"]},
+    {"text": "Currently unemployed and seeking job opportunities, the patient struggles with financial instability.", "label": ["unemployed"]},
+    {"text": "The patient admits to IV drug use over the past five years and is considering rehabilitation.", "label": ["IVDU"]},
+    {"text": "Living in temporary shelters for the past six months, the patient has no fixed abode.", "label": ["no fixed abode"]},
+    {"text": "The patient has been smoking since adolescence and has no plans to quit.", "label": ["smoker"]},
+    {"text": "Lost his job recently and is struggling with rent payments.", "label": ["unemployed"]},
+    {"text": "Reports recent IV drug use and is at high risk for infections.", "label": ["IVDU"]},
+    {"text": "Homeless for over a year and currently sleeping in a public shelter.", "label": ["no fixed abode"]},
+    {"text": "The patient smokes regularly and has been unemployed for several months.", "label": ["smoker", "unemployed"]},
+    {"text": "Long-term heroin user with ongoing IV drug use and no stable housing.", "label": ["IVDU", "no fixed abode"]},
+    {"text": "Lost their job and started using IV drugs to cope with stress.", "label": ["unemployed", "IVDU"]},
+    {"text": "The patient has no fixed address and continues to smoke heavily.", "label": ["no fixed abode", "smoker"]},
+    {"text": "Currently unemployed and living in a shelter, struggling with daily expenses.", "label": ["unemployed", "no fixed abode"]},
+    {"text": "Regular IV drug user and chronic smoker, experiencing health complications.", "label": ["IVDU", "smoker"]},
+    {"text": "The patient has been unemployed for over a year and is also a long-time smoker.", "label": ["unemployed", "smoker"]},
+    {"text": "IV drug use reported along with homelessness for the past six months.", "label": ["IVDU", "no fixed abode"]},
+    {"text": "No stable housing, jobless, and actively using IV drugs.", "label": ["no fixed abode", "unemployed", "IVDU"]},
+    {"text": "The patient smokes daily, is unemployed, and currently lives in a shelter.", "label": ["smoker", "unemployed", "no fixed abode"]},
+    {"text": "Heavy smoker, injecting drug user, and has been without a permanent home for two years.", "label": ["smoker", "IVDU", "no fixed abode"]},
+    {"text": "Patient is unemployed, regularly smokes, uses IV drugs, and has no fixed residence.", "label": ["smoker", "unemployed", "IVDU", "no fixed abode"]}
+  ]
