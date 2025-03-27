@@ -109,10 +109,51 @@ class MCTProject(MCTObj):
 
 
 
-
 class MedCATTrainerSession:
+    """Wrapper for the MedCATTrainer API.
+    This class provides a wrapper around the MedCATTrainer API, allowing for easy creation of projects, datasets, users, and models.
+
+    Attributes:
+        server (str): The server to connect to can also be set by an ENVVAR MCTRAINER_SERVER. Defaults to http://localhost:8001.
+        username (str): The username to connect to can also be set by an ENVVAR MCTRAINER_USERNAME.
+        password (str): The password to connect to can also be set by an ENVVAR MCTRAINER_PASSWORD.
+
+    Example:
+        Create a project with a concept database, vocabulary, dataset, and user.
+
+    >>> session = MedCATTrainerSession()
+    >>> ds = session.create_dataset(name='Test DS', dataset_file='<path_to_dataset>.csv')
+    >>> cdb_file = '<model_pack_path>/cdb.dat'
+    >>> vocab_file = '<model_pack_path>/vocab.dat'
+    >>> model_pack_zip = '<model_pack_path>.zip'
+    >>> # Create a concept database and vocabulary in the MCTrainer instance. This is the NER+L model only.
+    >>> cdb, vocab = session.create_medcat_model(MCTConceptDB(name='test_cdb', conceptdb_file=cdb_file), 
+                                             MCTVocab(name='test_vocab', vocab_file=vocab_file))
+    >>> # OR Create a model pack in the MCTrainer instance, NER+L, plus any MetaCAT or RelCAT models packaged together.
+    >>> session.create_medcat_model_pack(MCTModelPack(name='test_model_pack', model_pack_zip=model_pack_zip))
+    >>> session.create_project(name='test-project', description='test-description', members=[MCTUser(username='test-user')], dataset=ds, concept_db=cdb, vocab=vocab)   
+
+        A common interaction would be to create a project with a new dataset but existing concept database and vocabulary or Modelpack.
+    >>> projects = session.get_projects()
+    >>> ds = session.create_dataset(name='New Test DS', dataset_file='/Users/tom/phd/MedCATtrainer/notebook_docs/example_data/cardio.csv')
+    >>> # MCTObjects can be referenced by name or by the wrapper object.
+    >>> session.create_project(name='test-project', description='test-description', members=[MCTUser(username='test-user')], dataset=ds, 
+    concept_db=MCTConceptDB(name='test_cdb'), vocab=MCTVocab(name='test_vocab'))   
+
+        To download annotations for a project:
+    >>> projects = session.get_projects()
+    >>> annotations = session.get_project_annos(projects[0])
+    """
 
     def __init__(self, server=None):
+        """Initialize the MedCATTrainerSession.
+
+        Args:
+            server (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            MCTUtilsException: _description_
+        """
         self.username = os.getenv("MCTRAINER_USERNAME")
         password = os.getenv("MCTRAINER_PASSWORD")
         self.server = server or 'http://localhost:8001'
