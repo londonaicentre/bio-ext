@@ -46,6 +46,7 @@ def oncollama_epic_asset(context: AssetExecutionContext):
             "document_EpicId",
             "activity_Date",
             "document_CreatedWhen",
+            "document_Content",
             "document_UpdatedWhen",
             "patient_NHSNumber",
             "patient_DurableKey",
@@ -81,17 +82,26 @@ def oncollama_epic_asset(context: AssetExecutionContext):
     for doc in elasticsearch_scroll_generator(
         dest_es, "gstt_epic_notes_replica", query
     ):
-        document_text = doc["document_Content"]
+        document_text = doc["_source"]["document_Content"]
         document_lengths.append(len(document_text))
         start_time = datetime.now()
-        process_document(document_text, dest_es, start_date, end_date)
+
+        try:
+            res = process_document(document_text)
+        except ValueError as e:
+            context.log.warn(
+                f"Failed to process document {doc['_source']['id']} due to {e}"
+            )
+        else:
+            context.log.info(res)
+
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
 
         durations.append(duration)
 
         context.log.info(
-            f"Processed document with ID {doc['id']} in {duration:.2f} seconds."
+            f"Processed document with ID {doc['_source']['id']} in {duration:.2f} seconds."
         )
         number_of_documents += 1
 
