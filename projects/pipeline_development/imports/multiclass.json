@@ -1,0 +1,22 @@
+[
+    {"text": "Biopsy results confirm the presence of malignant cells, and the patient has been referred for oncology assessment.", "label": ["Has cancer"]},
+    {"text": "CT imaging reveals a mass with irregular borders and increased metabolic activity, highly suggestive of malignancy.", "label": ["Has cancer"]},
+    {"text": "Histopathology confirms adenocarcinoma, and treatment planning for chemotherapy has begun.", "label": ["Has cancer"]},
+    {"text": "PET scan shows widespread metastatic lesions consistent with advanced malignancy.", "label": ["Has cancer"]},
+    {"text": "A lung biopsy confirms non-small cell carcinoma, and the patient is scheduled for staging investigations.", "label": ["Has cancer"]},
+    {"text": "Fine-needle aspiration of a thyroid nodule reveals papillary carcinoma requiring surgical intervention.", "label": ["Has cancer"]},
+    {"text": "The patient presents with unexplained weight loss and a non-resolving mass, prompting urgent oncology referral.", "label": ["Suspicion of cancer"]},
+    {"text": "A recent mammogram detected a suspicious lesion requiring further diagnostic workup.", "label": ["Suspicion of cancer"]},
+    {"text": "The patient has persistent hematuria with an abnormal bladder mass seen on ultrasound, raising suspicion of malignancy.", "label": ["Suspicion of cancer"]},
+    {"text": "A biopsy has been scheduled for an indeterminate liver lesion with atypical imaging features.", "label": ["Suspicion of cancer"]},
+    {"text": "The patient has a rapidly enlarging lymph node with concerning PET scan findings.", "label": ["Suspicion of cancer"]},
+    {"text": "There is a lung nodule with irregular edges and progressive growth on serial imaging, requiring further assessment.", "label": ["Suspicion of cancer"]},
+    {"text": "Endoscopy revealed a gastric ulcer with atypical features, and biopsy results are pending.", "label": ["Suspicion of cancer"]},
+    {"text": "The patient was referred due to an abnormal PSA level, indicating potential prostate malignancy.", "label": ["Suspicion of cancer"]},
+    {"text": "Recent imaging shows a benign cyst with no suspicious features, and no further follow-up is needed.", "label": ["No cancer"]},
+    {"text": "A dermatology review confirmed that the skin lesion is a benign nevus, with no signs of malignancy.", "label": ["No cancer"]},
+    {"text": "A colonoscopy revealed only benign polyps with no evidence of dysplasia or malignancy.", "label": ["No cancer"]},
+    {"text": "A lung nodule detected on screening CT remains stable over two years, with no concerning features.", "label": ["No cancer"]},
+    {"text": "The patient’s breast lump was confirmed as a fibroadenoma, requiring no further intervention.", "label": ["No cancer"]},
+    {"text": "A PET scan showed no evidence of recurrent disease, and the patient remains in remission.", "label": ["No cancer"]}
+  ]
