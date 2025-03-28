@@ -119,5 +119,5 @@ def create_index_if_not_exists(
     Raises:
         elasticsearch.exceptions.RequestError: If the index cannot be created
     """
-    if not es.indices.exists(index):
+    if not es.indices.exists(index=index):
         es.indices.create(index=index, body=settings)
