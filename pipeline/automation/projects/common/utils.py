@@ -8,7 +8,7 @@ def elasticsearch_scroll_generator(
     index: str,
     query: dict,
     page_size: int = 1000,
-    scroll_timeout: str | None = None,
+    scroll_timeout: str = "12h",
 ) -> Generator[dict, None, None]:
     """
     Implements the Elasticsearch scroll API to efficiently retrieve large result sets by scrolling
