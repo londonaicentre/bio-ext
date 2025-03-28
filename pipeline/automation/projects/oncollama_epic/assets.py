@@ -80,8 +80,8 @@ def oncollama_epic_asset(context: AssetExecutionContext):
                     {
                         "bool": {
                             "should": [
-                                {"wildcard": {"activity_Department": "*CANCER*"}},
-                                {"wildcard": {"activity_Department": "*ONCOLOGY*"}},
+                                {"match": {"activity_Department": "*CANCER*"}},
+                                {"match": {"activity_Department": "*ONCOLOGY*"}},
                             ],
                             "minimum_should_match": 1,
                         }
