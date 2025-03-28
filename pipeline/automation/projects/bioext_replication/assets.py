@@ -57,6 +57,7 @@ def elasticsearch_replication_asset(
             "activity_Type",
             "activity_VisitClass",
             "activity_VisitType",
+            "activity_Department",
             "activity_DepartmentSpecialty",
             "activity_ChiefComplaint",
             "document_Content",
