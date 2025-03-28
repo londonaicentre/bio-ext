@@ -1,13 +1,12 @@
+from datetime import datetime, timedelta
+
 import dagster as dg
 from dagster import (
     AssetExecutionContext,
     asset,
 )
-from dagster_slack import slack_on_success
-from dagster._core.execution.context.hook import HookContext
+from slack_sdk import WebClient
 
-
-from datetime import datetime, timedelta
 
 from projects.bioext_replication.assets import (
     elasticsearch_replication_asset,
@@ -16,28 +15,21 @@ from projects.bioext_replication.assets import (
 from projects.common.utils import (
     create_index_if_not_exists,
     elasticsearch_scroll_generator,
-    save_result_to_index,
     get_count_of_documents,
+    save_result_to_index,
 )
+
 from .main import process_document
 
 MODEL_VERSION = "1"
 OUTPUT_INDEX = f"oncollama_epic_{MODEL_VERSION}"
 
 
-def slack_success_message(context: HookContext):
-    """Format the message to be sent to Slack."""
-    metadata = context.op_output_metadata
-    message = f"*OncoLlama Epic Asset*:\n{metadata}"
-    return message
-
-
-@slack_on_success(channel="#dagster-bot", message=slack_success_message)
 @asset(
     automation_condition=dg.AutomationCondition.eager(),
     deps=[elasticsearch_replication_asset],
     partitions_def=epic_daily_partitions,
-    required_resource_keys={"dest_es"},
+    required_resource_keys={"dest_es", "slack"},
     code_version="1.0.0",  # This is equivalent to the oncollama version
 )
 def oncollama_epic_asset(context: AssetExecutionContext):
@@ -175,6 +167,16 @@ def oncollama_epic_asset(context: AssetExecutionContext):
         sum(document_lengths) / len(document_lengths) if document_lengths else 0
     )
     avg_duration = sum(durations) / len(durations) if durations else 0
+
+    slack_client: WebClient = context.resources.slack.get_client()
+
+    slack_client.chat_postMessage(
+        channel="#pipelines",
+        text=(
+            f"Processed {number_of_documents} (out of {potential_documents} total) documents in {avg_duration:.2f} seconds "
+            f"with an average document length of {avg_length:.2f} characters."
+        ),
+    )
 
     return dg.MaterializeResult(
         metadata={

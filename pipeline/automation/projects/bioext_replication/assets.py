@@ -6,8 +6,8 @@ from dagster import (
     DailyPartitionsDefinition,
     asset,
 )
-from elasticsearch.helpers import bulk
 from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
 
 from ..common.utils import elasticsearch_scroll_generator
 from .config import EPIC_START_DATE, ElasticsearchReplicationConfig

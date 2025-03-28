@@ -1,6 +1,7 @@
 import os
 
 from dagster import resource
+from dagster_slack import SlackResource
 from elastic_transport import RequestsHttpNode
 from elasticsearch import Elasticsearch
 
@@ -49,4 +50,5 @@ def destination_elasticsearch_resource(init_context):
 elasticsearch_resources = {
     "source_es": source_elasticsearch_resource,
     "dest_es": destination_elasticsearch_resource,
+    "slack": SlackResource(token=os.getenv("SLACK_API_TOKEN")),
 }
