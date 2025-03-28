@@ -21,7 +21,7 @@ epic_daily_partitions = DailyPartitionsDefinition(
 @asset(
     partitions_def=epic_daily_partitions,
     description="Replicates data from source Elasticsearch index to BioExt Elastic replica",
-    required_resource_keys={"source_es", "dest_es"},
+    required_resource_keys={"source_es", "dest_es", "slack"},
     backfill_policy=dg.BackfillPolicy.multi_run(),
 )
 def elasticsearch_replication_asset(

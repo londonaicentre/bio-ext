@@ -36,6 +36,8 @@ def oncollama_epic_asset(context: AssetExecutionContext):
     """Asset for OncoLlama output."""
     context.log.info("Starting OncoLLAMA Epic asset execution.")
 
+    job_start_time = datetime.now()
+
     partition_date_str = context.partition_key
 
     partition_date = datetime.strptime(partition_date_str, "%Y-%m-%d")
@@ -168,13 +170,18 @@ def oncollama_epic_asset(context: AssetExecutionContext):
     )
     avg_duration = sum(durations) / len(durations) if durations else 0
 
+    total_duration = datetime.now() - job_start_time
+
     slack_client: WebClient = context.resources.slack.get_client()
 
     slack_client.chat_postMessage(
         channel="#pipelines",
         text=(
-            f"Processed {number_of_documents} (out of {potential_documents} total) documents in {avg_duration:.2f} seconds "
-            f"with an average document length of {avg_length:.2f} characters."
+            "# OncoLLAMA Epic Asset Run ℹ️\n"
+            f"Processed {number_of_documents} (out of {potential_documents} total) documents.\n"
+            f"  - Average time per document: {avg_duration:.2f} seconds\n"
+            f"  - Average document length of {avg_length:.2f} characters.\n"
+            f"  - Total time taken: {total_duration.total_seconds() / 60:.2f} minutes\n"
         ),
     )
 
