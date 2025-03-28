@@ -83,8 +83,10 @@ def oncollama_epic_asset(context: AssetExecutionContext):
     }
 
     create_index_if_not_exists(dest_es, OUTPUT_INDEX)
+
+    count_query = {"query": query["query"]}
     potential_documents = get_count_of_documents(
-        dest_es, "gstt_epic_notes_replica", query
+        dest_es, "gstt_epic_notes_replica", count_query
     )
     context.log.info(f"Potential documents to process: {potential_documents}")
 
