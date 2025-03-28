@@ -1,17 +1,11 @@
 import json
 import re
-import time
 
 import requests
 
 """
 main.py
 Functions required to pass Epic cancer document content to an LLM endpoint, and parse/save the output json.
-(1) Source json loaded
-(2) Try to extract target section
-(3) Pass to LLM
-(4) Extract section, check for json, create output json
-(5) Save output json
 Currently loops through files in a directory, and saves to a target directory. Todo:
 (1) Modify to read from Elastic, then save back to new Elastic index.
 (2) Need to spin model up and down if being run on an increment through Dagster
@@ -128,8 +122,8 @@ def process_document(
         str: The extracted JSON object as a string.
     Raises:
         ConnectionError: If there is a connection error while sending the request to the LLM API.
+        HTTPError: If the response from the LLM API is not successful.
         ValueError: If no relevant section is found in the document or if JSON extraction fails.
-
     """
     # Remove unwanted parts of the input string retrieved from Elastic
     focused_document = extract_epic_section(input_string)
@@ -149,26 +143,26 @@ def process_document(
     }
 
     try:
-        llm_start = time.time()
         response = requests.post(api_url, headers=headers, data=json.dumps(payload))
         response.raise_for_status()
 
         # parse out contents section
         response_content = response.json()["choices"][0]["message"]["content"]
-    # TODO: Handle other exceptions
+    # We probably shouldn't be catching exceptions at all - but let the error bubble up immediately to the caller to handle.
+    # If any of these were to occur we would probably want to stop the pipeline and alert the user.
     except requests.ConnectionError as e:
         print(f"Error connecting to LLM endpoint: {e}")
+        raise e
+    except requests.HTTPError as e:
+        print(f"HTTP error: {e}")
         raise e
 
     # extract JSON from response
     try:
         extracted_json = extract_json_from_text(response_content)
-        llm_time = time.time() - llm_start
     except ValueError as e:
         print(f"Error extracting JSON from response: {e}")
         raise e
-
-    print(f"vLLM time: {llm_time:.1f}s")
 
     # Return the extracted JSON
     return extracted_json
