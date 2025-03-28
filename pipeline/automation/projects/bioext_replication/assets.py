@@ -6,6 +6,7 @@ from dagster import (
     DailyPartitionsDefinition,
     asset,
 )
+from dagster_slack import slack_on_failure
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
@@ -143,6 +144,7 @@ materialisation_job = dg.define_asset_job(
     name="update_job",
     selection=[elasticsearch_replication_asset],
     description="Job to run update of indexes for BioExt",
+    hooks={slack_on_failure("#pipelines", "BioExt update job failed!")},
 )
 
 # Schedule the job to run at midnight every day
