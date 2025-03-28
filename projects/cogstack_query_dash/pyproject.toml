@@ -9,5 +9,6 @@ dependencies = [
     "elasticsearch",
     "pandas",
     "streamlit",
-    "yaml"
+    "pyyaml",
+    "marimo>=0.11.30",
 ]

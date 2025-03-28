@@ -34,7 +34,7 @@ txt = st.text_area("query", config["examplequery"])
 
 # Visualise query
 st.markdown("### JSON visualisation of the query")
-st.json(txt,expanded=False)
+st.json(txt, expanded=False)
 
 
 # Visualise result
