@@ -111,7 +111,7 @@ def oncollama_epic_asset(context: AssetExecutionContext):
         # If the document is malformed or contains data that cannot be processed then we want to keep a track of it as being
         # non-processable but not fail the entire pipeline.
         try:
-            res = process_document(document_text)
+            res = process_document(document_text, api_url="http://vllm_oncollamav2.bioext_network:8000/v1/chat/completions")
         except ValueError as e:
             context.log.warning(
                 f"Failed to process document {doc['_source']['id']} due to: {e}"

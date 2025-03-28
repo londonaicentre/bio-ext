@@ -21,8 +21,8 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      no_proxy: "dagster_postgres"
-      NO_PROXY: "dagster_postgres"
+      no_proxy: "dagster_postgres,vllm_oncollamav2.bioext_network"
+      NO_PROXY: "dagster_postgres,vllm_oncollamav2.bioext_network"
       DAGSTER_POSTGRES_USER: dagster
       DAGSTER_POSTGRES_PASSWORD: dagster
       DAGSTER_POSTGRES_DB: dagster
@@ -32,6 +32,7 @@ services:
     networks:
       - dagster_network
       - coder_aicentrenet
+      - bioext_network
     depends_on:
       dagster_postgres:
         condition: service_healthy
@@ -42,6 +43,8 @@ networks:
     name: dagster_network
   coder_aicentrenet:
      name: coder_aicentrenet
+     external: true
+  bioext_network:
      external: true
 
 volumes:
