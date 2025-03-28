@@ -6,12 +6,20 @@ from dagster import (
 
 from datetime import datetime, timedelta
 
-from ..bioext_replication.assets import (
+from projects.bioext_replication.assets import (
     elasticsearch_replication_asset,
     epic_daily_partitions,
 )
-from ..common.utils import elasticsearch_scroll_generator
+from projects.common.utils import (
+    create_index_if_not_exists,
+    elasticsearch_scroll_generator,
+    save_result_to_index,
+    get_count_of_documents,
+)
 from .main import process_document
+
+MODEL_VERSION = "1"
+OUTPUT_INDEX = f"oncollama_epic_{MODEL_VERSION}"
 
 
 @asset(
@@ -74,34 +82,57 @@ def oncollama_epic_asset(context: AssetExecutionContext):
         },
     }
 
+    create_index_if_not_exists(dest_es, OUTPUT_INDEX)
+    potential_documents = get_count_of_documents(
+        dest_es, "gstt_epic_notes_replica", query
+    )
+    context.log.info(f"Potential documents to process: {potential_documents}")
+
     document_lengths = []
     durations = []
+    failed_document_ids = []
     number_of_documents = 0
 
     # Use the scroll generator to fetch documents
     for doc in elasticsearch_scroll_generator(
         dest_es, "gstt_epic_notes_replica", query
     ):
+        # Extract the document text
         document_text = doc["_source"]["document_Content"]
+        document_id = doc["_source"]["id"]
+
         document_lengths.append(len(document_text))
+
         start_time = datetime.now()
 
+        # == Process the document via vLLM ==
+        # If the document is malformed or contains data that cannot be processed then we want to keep a track of it as being
+        # non-processable but not fail the entire pipeline.
         try:
             res = process_document(document_text)
         except ValueError as e:
-            context.log.warn(
-                f"Failed to process document {doc['_source']['id']} due to {e}"
+            context.log.warning(
+                f"Failed to process document {doc['_source']['id']} due to: {e}"
             )
-        else:
-            context.log.info(res)
+            failed_document_ids.append(document_id)
+            continue
 
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
 
         durations.append(duration)
 
+        # This may fail if the document is malformed or connectivity issues to Elastic arise
+        # We want this to arrest the pipeline so we catch the exception
+        save_result_to_index(
+            dest_es,
+            OUTPUT_INDEX,
+            document_id,
+            res,
+        )
+
         context.log.info(
-            f"Processed document with ID {doc['_source']['id']} in {duration:.2f} seconds."
+            f"Processed document with ID {document_id} in {duration:.2f} seconds."
         )
         number_of_documents += 1
 
@@ -114,7 +145,9 @@ def oncollama_epic_asset(context: AssetExecutionContext):
     return dg.MaterializeResult(
         metadata={
             "average_document_length": avg_length,
-            "average_processing_time": avg_duration,
-            "number_of_documents": number_of_documents,
+            "average_vllm_time": avg_duration,
+            "number_documents_processes": number_of_documents,
+            "failed_document_ids": failed_document_ids,
+            "number_total_documents": potential_documents,
         }
     )
