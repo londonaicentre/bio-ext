@@ -1,5 +1,5 @@
 import streamlit as st
-
+import json
 import os
 from csdash import dbaccess, transforms
 import pandas as pd
@@ -36,7 +36,7 @@ kwremovelist = config["escapekwlist"]
 
 ## APPLYING DECORATORS
 fetch_sampledata = st.cache_data(dbaccess.fetch_sampledata)
-characterisedf = st.cache_data(transforms.characterisedf)
+#characterisedf = st.cache_data(transforms.characterisedf)
 mappingtypes = st.cache_data(dbaccess.get_mapping_types)
 get_top_10kw = st.cache_data(dbaccess.get_top_10kw)
 get_date_ranges = st.cache_data(dbaccess.get_date_ranges)
@@ -48,15 +48,17 @@ def display_dataframe_overview(index,_es,kwremovelist):
     overview_df = cogstack_brief[cogstack_brief["index"] == index ].to_dict("records")[0]
     headerstring = f"{overview_df["index"]} , docs= {overview_df["docs.count"]},size = {overview_df["store.size"]}, no_cols={overview_df["fields_counts"]}"
     with st.expander(headerstring):
-        _df = all_df[i]
-        mapping = _es.indices.get_mapping(index = i)
-        st.markdown(f"#### Fields in {i}")
-        st.json(mapping[i]["mappings"],expanded=False)
+        _df = all_df[index]
+        print(f"{index}")
+        mapping = _es.indices.get_mapping(index = index)
+        st.markdown(f"#### Fields in {index}")
+        st.json(mapping[index]["mappings"],expanded=False)
         st.markdown("#### Fields grouped by datatypes ")
-        columntypes = mappingtypes(_es=es,indexname=i)
+        columntypes = mappingtypes(_es=es,indexname=index)
         st.json(columntypes,expanded=False)
         process_columns(index,columntypes,kwremovelist)
-        characterisedf(_data=_df)
+        print(f"passing {index} to {_df} to characteriser")
+        transforms.characterisedf(_data=_df)
     return 
 
 def process_columns(index,columntypes,kwremovelist):
@@ -65,7 +67,6 @@ def process_columns(index,columntypes,kwremovelist):
         cleankw = [field for field in kw if field not in kwremovelist]
         datefields = columntypes["date"]
         st.write('mark')
-        st.write(datefields)
         numcols = list(
                     set(list(columntypes["scaled_float"]) + list(columntypes["integer"]))
                 )
@@ -75,24 +76,23 @@ def process_columns(index,columntypes,kwremovelist):
         else: 
             st.markdown("#### Top categories and counts in fields")
             top10 = get_top_10kw(_es=es,indexname=index,fieldlist=cleankw)
-            st.write(top10)
-            st.write(type(top10))
+            st.json(json.dumps(top10),expanded=False)
         # for dates
         if not datefields:
             st.write("{index} has no datecolumns")
         else: 
             dateranges = get_date_ranges(_es=es,indexname=index,fieldlist=datefields)
             st.markdown("#### Date Ranges")
-            st.write(dateranges)
+            st.json(dateranges,expanded=False)
         #for numeric columns
         if not numcols: 
             st.write("No numeric columns in {index}")
         else:
             st.markdown("#### Numeric column summaries")
             numsumm = get_num_stats(_es=es, indexname=index, fieldlist=numcols)
-            st.write(numsumm)
+            st.json(json.dumps(numsumm),expanded=False)
     except Exception as e:
-        st.write(f"{e} error for index {i}")
+        st.write(f"{e} error for index {index}")
     return 
 
 
