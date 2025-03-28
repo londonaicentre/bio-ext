@@ -15,12 +15,6 @@ ADD . /app
 
 RUN chmod +x /app/entrypoint.sh
 
-# Create workspace and dagster.yaml
-# COPY workspace.yaml /opt/dagster/app/
-# COPY dagster.yaml /opt/dagster/app/
-# COPY .env /opt/dagster/app/
-
-
 ENV DAGSTER_HOME=/app
 
 ENTRYPOINT ["/app/entrypoint.sh"]

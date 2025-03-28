@@ -42,7 +42,7 @@ networks:
     name: dagster_network
   coder_aicentrenet:
      name: coder_aicentrenet
-    #  external: true
+     external: true
 
 volumes:
   dagster_postgres:
