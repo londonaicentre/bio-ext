@@ -3,6 +3,9 @@ from dagster import (
     AssetExecutionContext,
     asset,
 )
+from dagster_slack import slack_on_success
+from dagster._core.execution.context.hook import HookContext
+
 
 from datetime import datetime, timedelta
 
@@ -22,6 +25,14 @@ MODEL_VERSION = "1"
 OUTPUT_INDEX = f"oncollama_epic_{MODEL_VERSION}"
 
 
+def slack_success_message(context: HookContext):
+    """Format the message to be sent to Slack."""
+    metadata = context.op_output_metadata
+    message = f"*OncoLlama Epic Asset*:\n{metadata}"
+    return message
+
+
+@slack_on_success(channel="#dagster-bot", message=slack_success_message)
 @asset(
     automation_condition=dg.AutomationCondition.eager(),
     deps=[elasticsearch_replication_asset],

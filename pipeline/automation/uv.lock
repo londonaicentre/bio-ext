@@ -58,6 +58,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "dagster" },
     { name = "dagster-postgres" },
+    { name = "dagster-slack" },
     { name = "dagster-webserver" },
     { name = "elastic-transport" },
     { name = "elasticsearch" },
@@ -75,6 +76,7 @@ dev = [
 requires-dist = [
     { name = "dagster", specifier = ">=1.8.13" },
     { name = "dagster-postgres", specifier = ">=0.24.13" },
+    { name = "dagster-slack", specifier = ">=0.26.6" },
     { name = "dagster-webserver", specifier = ">=1.8.13" },
     { name = "elastic-transport", specifier = ">=8.17.1" },
     { name = "elasticsearch", specifier = ">=8.17.2" },
@@ -159,7 +161,7 @@ name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "platform_system == 'Windows'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593 }
 wheels = [
@@ -205,11 +207,11 @@ dependencies = [
     { name = "jinja2" },
     { name = "packaging" },
     { name = "protobuf" },
-    { name = "psutil", marker = "sys_platform == 'win32'" },
+    { name = "psutil", marker = "platform_system == 'Windows'" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "pytz" },
-    { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "pywin32", marker = "platform_system == 'Windows'" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "rich" },
@@ -222,7 +224,7 @@ dependencies = [
     { name = "toposort" },
     { name = "tqdm" },
     { name = "typing-extensions" },
-    { name = "tzdata", marker = "sys_platform == 'win32'" },
+    { name = "tzdata", marker = "platform_system == 'Windows'" },
     { name = "universal-pathlib" },
     { name = "watchdog" },
 ]
@@ -276,6 +278,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ac/54/1ea7b57304cd1ae7d5e9482bfe40e153657a10663ed32efa956f327cefd4/dagster_shared-0.26.6.tar.gz", hash = "sha256:df56deb4e1e565cb158fae2380e3ebcd4bb447322aabe57e9f74aa5e0972245c", size = 5900 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/c7/08f7bafaa1d3dc2f5d5515092227fad09afe2b2431d703734a68959af502/dagster_shared-0.26.6-py3-none-any.whl", hash = "sha256:19f19db488965ee829318a858fbb0b1bc13f8d834904df7f8f7a1bab184f3658", size = 6060 },
+]
+
+[[package]]
+name = "dagster-slack"
+version = "0.26.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dagster" },
+    { name = "slack-sdk" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/aa/c7/dc490103136f6df2de9257e6eb19840e2116135ff9a1a3298523919c48be/dagster-slack-0.26.6.tar.gz", hash = "sha256:958b6fa6dbe261d090c7beb6df80769526dcb77f1d36912f13fe8b69c73d87be", size = 9951 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/69/bd/b153341e51d9355813da3bc6901f8eb6a6791525ac432588ec793ac5b36c/dagster_slack-0.26.6-py3-none-any.whl", hash = "sha256:d56d36483967756dc6afca54d3bcccfd07c336843d45b5660a7756b8383a39d2", size = 11105 },
 ]
 
 [[package]]
@@ -1171,6 +1186,15 @@ wheels = [
 ]
 
 [[package]]
+name = "slack-sdk"
+version = "3.35.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/32/a5/13077a5696ded22cc955ff6314028b7e6140b1c989b19ca27a6b26590e6e/slack_sdk-3.35.0.tar.gz", hash = "sha256:8183b6cbf26a0c1e2441478cd9c0dc4eef08d60c1394cfdc9a769e309a9b6459", size = 232887 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/8e/eed71dc79a187ba32681f12a104786ab89355bc474082211d92e1fba6bcf/slack_sdk-3.35.0-py2.py3-none-any.whl", hash = "sha256:00933d171fbd8a068b321ebb5f89612cc781d3183d8e3447c85499eca9d865be", size = 293272 },
+]
+
+[[package]]
 name = "sniffio"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1299,7 +1323,7 @@ name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "platform_system == 'Windows'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
 wheels = [
