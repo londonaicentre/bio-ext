@@ -177,7 +177,7 @@ def oncollama_epic_asset(context: AssetExecutionContext):
     slack_client.chat_postMessage(
         channel="#pipelines",
         text=(
-            "# OncoLLAMA Epic Asset Run ℹ️\n"
+            f"**OncoLLAMA Epic Asset Run ({partition_date})** ℹ️\n"
             f"Processed {number_of_documents} (out of {potential_documents} total) documents.\n"
             f"  - Average time per document: {avg_duration:.2f} seconds\n"
             f"  - Average document length of {avg_length:.2f} characters.\n"
