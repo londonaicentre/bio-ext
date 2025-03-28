@@ -64,6 +64,8 @@ def process_columns(index,columntypes,kwremovelist):
         kw = columntypes["keyword"]
         cleankw = [field for field in kw if field not in kwremovelist]
         datefields = columntypes["date"]
+        st.write('mark')
+        st.write(datefields)
         numcols = list(
                     set(list(columntypes["scaled_float"]) + list(columntypes["integer"]))
                 )
@@ -73,21 +75,22 @@ def process_columns(index,columntypes,kwremovelist):
         else: 
             st.markdown("#### Top categories and counts in fields")
             top10 = get_top_10kw(_es=es,indexname=index,fieldlist=cleankw)
-            st.json(top10,expanded=False)
+            st.write(top10)
+            st.write(type(top10))
         # for dates
         if not datefields:
             st.write("{index} has no datecolumns")
         else: 
             dateranges = get_date_ranges(_es=es,indexname=index,fieldlist=datefields)
             st.markdown("#### Date Ranges")
-            st.json(dateranges,expanded=False)
+            st.write(dateranges)
         #for numeric columns
         if not numcols: 
             st.write("No numeric columns in {index}")
         else:
             st.markdown("#### Numeric column summaries")
             numsumm = get_num_stats(_es=es, indexname=index, fieldlist=numcols)
-            st.json(numsumm,expanded=False)
+            st.write(numsumm)
     except Exception as e:
         st.write(f"{e} error for index {i}")
     return 
