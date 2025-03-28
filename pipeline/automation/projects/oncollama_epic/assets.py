@@ -30,8 +30,8 @@ OUTPUT_INDEX = f"oncollama_epic_{MODEL_VERSION}"
     code_version="1.0.0",  # This is equivalent to the oncollama version
 )
 def oncollama_epic_asset(context: AssetExecutionContext):
-    """Asset for OncoLLAMA EPIC."""
-    context.log.info("Starting OncoLLAMA EPIC asset execution.")
+    """Asset for OncoLlama output."""
+    context.log.info("Starting OncoLLAMA Epic asset execution.")
 
     partition_date_str = context.partition_key
 

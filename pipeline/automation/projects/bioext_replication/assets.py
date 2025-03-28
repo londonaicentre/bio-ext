@@ -7,6 +7,7 @@ from dagster import (
     asset,
 )
 from elasticsearch.helpers import bulk
+from elasticsearch import Elasticsearch
 
 from ..common.utils import elasticsearch_scroll_generator
 from .config import EPIC_START_DATE, ElasticsearchReplicationConfig
@@ -38,8 +39,8 @@ def elasticsearch_replication_asset(
     )
 
     # Get Elasticsearch clients from resources
-    source_es = context.resources.source_es
-    dest_es = context.resources.dest_es
+    source_es: Elasticsearch = context.resources.source_es
+    dest_es: Elasticsearch = context.resources.dest_es
 
     # Query to fetch data for this time partition with explicit source selection
     query = {
@@ -139,10 +140,14 @@ def elasticsearch_replication_asset(
 
 # Schedule the asset materialisation job
 materialisation_job = dg.define_asset_job(
-    "daily_elastic_job", selection=[elasticsearch_replication_asset]
+    name="update_job",
+    selection=[elasticsearch_replication_asset],
+    description="Job to run update of indexes for BioExt",
 )
 
 # Schedule the job to run at midnight every day
 materialisation_schedule = dg.build_schedule_from_partitioned_job(
-    materialisation_job, hour_of_day=0
+    materialisation_job,
+    hour_of_day=0,
+    description="Orchestration of BioExt update to run at midnight every day",
 )
