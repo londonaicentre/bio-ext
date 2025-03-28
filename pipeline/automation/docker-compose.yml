@@ -1,0 +1,49 @@
+services:
+  dagster_postgres:
+    image: postgres:15
+    container_name: dagster_postgres
+    environment:
+      POSTGRES_USER: dagster
+      POSTGRES_PASSWORD: dagster
+      POSTGRES_DB: dagster
+    networks:
+      - dagster_network
+    volumes:
+      - dagster_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dagster"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dagster:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      no_proxy: "dagster_postgres"
+      NO_PROXY: "dagster_postgres"
+      DAGSTER_POSTGRES_USER: dagster
+      DAGSTER_POSTGRES_PASSWORD: dagster
+      DAGSTER_POSTGRES_DB: dagster
+      DAGSTER_POSTGRES_HOST: dagster_postgres
+    ports:
+      - "3000:3000"  # Dagster UI
+    networks:
+      - dagster_network
+      - coder_aicentrenet
+    depends_on:
+      dagster_postgres:
+        condition: service_healthy
+
+networks:
+  dagster_network:
+    driver: bridge
+    name: dagster_network
+  coder_aicentrenet:
+     name: coder_aicentrenet
+    #  external: true
+
+volumes:
+  dagster_postgres:
+  
