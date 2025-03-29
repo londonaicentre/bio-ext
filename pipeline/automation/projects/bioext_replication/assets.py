@@ -139,12 +139,14 @@ def elasticsearch_replication_asset(
     )
 
 
+from ..oncollama_epic.assets import oncollama_epic_asset  # noqa: E402
+
 # Schedule the asset materialisation job
 materialisation_job = dg.define_asset_job(
     name="update_job",
-    selection=[elasticsearch_replication_asset],
-    description="Job to run update of indexes for BioExt",
-    hooks={slack_on_failure("#pipelines", "BioExt update job failed!")},
+    selection=[elasticsearch_replication_asset, oncollama_epic_asset],
+    description="Job to run update of indexes for BioExt and oncollama",
+    hooks={slack_on_failure("#pipelines", "‼️ @channel BioExt update job failed!")},
 )
 
 # Schedule the job to run at midnight every day
