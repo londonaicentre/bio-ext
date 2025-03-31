@@ -48,7 +48,7 @@ Requirements should be configured per project, using preferred virtual environme
 ```
 pip install -r requirements.txt
 ```
-As well as other packages, this must contain `-e ../../` to install bioext as an editable package.
+As well as other packages, this must contain `-e ../../.[ml]` to install bioext as an editable package, with all the extra required machine learning libraries.
 
 ### First time set-up (admin)
 
