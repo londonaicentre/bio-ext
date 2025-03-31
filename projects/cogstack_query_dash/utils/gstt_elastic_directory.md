@@ -133,3 +133,19 @@ These are records taken during outpatient visit consultations. They usually cont
     }
 }
 ```
+
+query = {
+    "_source": [
+        "id",
+        "document_Type",
+        "document_Name",
+    ],
+    "query": {"match_all":{}},
+    "size": 10000
+}
+
+Clinical-Out Pt
+Consultation letter
+Clinical-MDM
+Clinical-In Pt
+Clinical-Key Data
