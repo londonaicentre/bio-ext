@@ -134,18 +134,46 @@ These are records taken during outpatient visit consultations. They usually cont
 }
 ```
 
-query = {
-    "_source": [
-        "id",
-        "document_Type",
-        "document_Name",
-    ],
-    "query": {"match_all":{}},
-    "size": 10000
-}
+## cancer clinic letters
 
-Clinical-Out Pt
-Consultation letter
-Clinical-MDM
-Clinical-In Pt
-Clinical-Key Data
+```json
+{
+  "source": [
+    "document_Type",
+    "document_Name",
+    "document_EncouterDate",
+    "document_Content",
+    "document_CreatedWhen",
+    "document_UpdatedWhen",
+    "patient_HospitalNumber_GSTT",
+    "patient_HospitalNumber_KCH",
+    "patient_RadiotherapyConsultant",
+    "patient_GlobalConsultant",
+    "patient_SourceId",
+    "patient_NhsNumber",
+    "patient_FirstName",
+    "patient_MiddleName",
+    "patient_LastName",
+    "patient_Gender",
+    "patient_DateOfBirth",
+    "patient_Ethnicity"
+  ],
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match_phrase": {
+            "document_Name.keyword": [
+              "Clinical-Out Pt",
+              "Consultation letter",
+              "Clinical-MDM",
+              "Clinical-In Pt",
+              "Clinical-Key Data"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+```
