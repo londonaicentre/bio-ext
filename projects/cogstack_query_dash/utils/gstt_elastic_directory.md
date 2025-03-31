@@ -160,7 +160,8 @@ These are records taken during outpatient visit consultations. They usually cont
   ],
   "query": {
     "bool": {
-      "must": [
+      "must": [],
+      "filter":[
         {
           "match_phrase": {
             "document_Name.keyword": [
