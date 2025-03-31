@@ -21,7 +21,7 @@ dependencies = [
 ml = [
     "transformers",
     "datasets",
-    "torch[llm]",
+    "torch",
     "huggingface-hub",
     "doccano-client @ git+https://github.com/drjzhn/doccano-client-urrlib-fix.git",
     "mlflow[extras]",
