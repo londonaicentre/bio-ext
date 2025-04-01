@@ -4,7 +4,7 @@ from collections import Counter
 
 
 def global_overview(_es, indexlist):
-    """ "
+    """
     function to help create a general over view of entire cogstack
     """
     docs = _es.cat.indices(format="json", h=["index", "docs.count"])
@@ -66,12 +66,13 @@ def get_summary(_es, index):
 
     return properties
 
+
 def check_load_states(string):
     """
-    check the presence of a session state object from streamlit and if not present, inform the user. 
+    check the presence of a session state object from streamlit and if not present, inform the user.
 
     Args:
-        string (stream lit state object): pass as string 
+        string (stream lit state object): pass as string
 
     Returns:
         stream lit state: will return and assign.
@@ -80,7 +81,5 @@ def check_load_states(string):
         response = st.session_state[string]
     else:
         st.write(f"{string}not available")
-    
+
     return response
-    
-    

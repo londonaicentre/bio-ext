@@ -2,7 +2,6 @@ import streamlit as st
 import json
 from csdash import dbaccess, transforms
 
-
 ## APPLYING DECORATORS
 fetch_sampledata = st.cache_data(dbaccess.fetch_sampledata)
 #characterisedf = st.cache_data(transforms.characterisedf)
@@ -13,7 +12,6 @@ get_num_stats = st.cache_data(dbaccess.get_num_stats)
 check_load_states = transforms.check_load_states
 # custom functions to help display dataframes for each expander.
 
-#
 # ENVIRON 
 # Load existing state objects
 csindexes = check_load_states("csindexes")
@@ -24,24 +22,45 @@ cogstack_brief = check_load_states("cogstack_brief")
 # load list of keywords to remove. 
 kwremovelist = config["escapekwlist"]
 
+# CUSTOM FUNCTIONS THAT HELP VISUALISE
 def display_dataframe_overview(index,_es,kwremovelist):
+    """display dataframe
+
+    Args:
+        index (str): name of cogstack index
+        _es (conn object): elastic search conn objectescription_
+        kwremovelist (list): keywords that data eda process to skip, avail from config.
+    """
+    # this two lines help display the expander header.
     overview_df = cogstack_brief[cogstack_brief["index"] == index ].to_dict("records")[0]
     headerstring = f"{overview_df["index"]} , docs= {overview_df["docs.count"]},size = {overview_df["store.size"]}, no_cols={overview_df["fields_counts"]}"
     with st.expander(headerstring):
+        # this is the code that generate under the expander
         _df = all_df[index]
         print(f"{index}")
+        # get fields in the index
         mapping = _es.indices.get_mapping(index = index)
         st.markdown(f"#### Fields in {index}")
         st.json(mapping[index]["mappings"],expanded=False)
+        # group by data types
         st.markdown("#### Fields grouped by datatypes ")
         columntypes = mappingtypes(_es=es,indexname=index)
         st.json(columntypes,expanded=False)
+        # then summary stats for each field types
         process_columns(index,columntypes,kwremovelist)
         print(f"passing {index} to {_df} to characteriser")
         transforms.characterisedf(_data=_df)
     return 
 
 def process_columns(index,columntypes,kwremovelist):
+    """gain summary stats, this function has a try except and then within this
+    3 sepearte cleaning one for keywords, one for date time and one for numeric
+
+    Args:
+        index (str): name of cogstack index
+        columntypes (str): name of fields in cogstack es
+        kwremovelist (list): avail from config, desinged to skip over eda
+    """
     try: 
         kw = columntypes["keyword"]
         cleankw = [field for field in kw if field not in kwremovelist]
@@ -80,13 +99,13 @@ def process_columns(index,columntypes,kwremovelist):
 
 st.title(config["start2"])
 st.markdown(config["instructions"])
+
 # allow user to select sample size.
 samplesize = st.number_input("Select docs size, default 100, max 10k",max_value=10000, value=100)
 config["all_cols_query"]["size"] = samplesize
 
 # collect sample data and save index into state
 all_df = fetch_sampledata(_es=es, indexlist = csindexes , query=config["all_cols_query"])
-
 st.markdown("## Now this looks into each individual dataframes")
 
 # this for loop create the expander objects in streamlit each with dataframe name 

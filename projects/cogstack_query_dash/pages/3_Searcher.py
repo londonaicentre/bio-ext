@@ -1,13 +1,13 @@
 import streamlit as st
 from csdash import dbaccess, transforms
 
+# load
 load_config = st.cache_data(dbaccess.load_config)
 check_load_states = transforms.check_load_states
-#
 config = load_config("utils/config_dash.yaml")
 
 # Load existing state objects
-csindexes= check_load_states("csindexes")
+csindexes = check_load_states("csindexes")
 es = check_load_states("es")
 
 # Select which index to do searches on

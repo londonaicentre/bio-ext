@@ -39,7 +39,7 @@ I will probably refactor to make it more maintainable with proper folder structu
 
 ## Dir structure 
 ```bash
-.
+
 ├── Hello.py
 ├── README.md
 ├── csdash
@@ -47,12 +47,17 @@ I will probably refactor to make it more maintainable with proper folder structu
 │   ├── dbaccess.py
 │   ├── nlp.py
 │   └── transforms.py
+├── eda_experimental.py
+├── gen_eda.py
 ├── pages
 │   ├── 1_Indexes.py
 │   ├── 2_Queries.py
 │   └── 3_Searcher.py
 ├── pyproject.toml
-└── utils
-    ├── config_dash.yaml
-    └── gstt_elastic_directory.md
+├── query_gen.py
+├── test.py
+├── utils
+│   ├── config_dash.yaml
+│   └── gstt_elastic_directory.md
+└── uv.lock
 ```

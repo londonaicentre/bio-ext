@@ -1,6 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
-import os 
+import os
 from csdash import dbaccess, transforms
 
 # app name declaration
@@ -11,7 +11,7 @@ st.set_page_config(
 load_config = st.cache_data(dbaccess.load_config)
 connect_cogstack = st.cache_resource(dbaccess.connect_cogstack)
 global_overview = st.cache_data(transforms.global_overview)
-list_indexes= st.cache_data(dbaccess.list_indexes)
+list_indexes = st.cache_data(dbaccess.list_indexes)
 
 # load config files and dot env and save to session
 config = load_config("utils/config_dash.yaml")
@@ -20,21 +20,21 @@ user = os.environ.get("ELASTIC_API_ID")
 if "config" not in st.session_state:
     st.session_state["config"] = config
 
-# connect to db and save to session 
+# connect to db and save to session
 es = connect_cogstack()
 if "es" not in st.session_state:
     st.session_state["es"] = es
 kwremovelist = config["escapekwlist"]
 
-# list the indexes and use them 
+# list the indexes and use them
 csindexes = list_indexes(_es=es)
-if 'csindexes' not in st.session_state:
+if "csindexes" not in st.session_state:
     st.session_state["csindexes"] = csindexes
 
-cogstack_brief = global_overview(_es = es, indexlist=csindexes)
+cogstack_brief = global_overview(_es=es, indexlist=csindexes)
 if "cogstack_brief" not in st.session_state:
     st.session_state["cogstack_brief"] = cogstack_brief
-    
+
 # STREAMLIT app UI beings
 
 # title properties
@@ -52,9 +52,9 @@ with st.expander("## Fields not in EDA"):
     st.write(config["escapekwlist"])
 
 with st.expander("## Available Indexes"):
-    st.write("these are index descriptions, click on Indexes tab to explore them individually.")
+    st.write(
+        "these are index descriptions, click on Indexes tab to explore them individually."
+    )
     st.markdown("These are the available indexes, documents in each and their sizes.")
     st.write(cogstack_brief)
     st.table(cogstack_brief.dtypes)
-
-

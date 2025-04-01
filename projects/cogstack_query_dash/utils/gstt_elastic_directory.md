@@ -163,7 +163,7 @@ These are records taken during outpatient visit consultations. They usually cont
       "must": [],
       "filter":[
         {
-          "match_phrase": {
+          "terms": {
             "document_Name.keyword": [
               "Clinical-Out Pt",
               "Consultation letter",

@@ -8,7 +8,7 @@ from .dbaccess import (
     get_mapping_types,
     get_top_10kw,
     get_date_ranges,
-    get_num_stats
+    get_num_stats,
 )
 from .nlp import remove_stopwords
 from .transforms import global_overview, characterisedf, get_summary, check_load_states
