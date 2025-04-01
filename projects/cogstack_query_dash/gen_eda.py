@@ -5,8 +5,6 @@ from tqdm import tqdm
 from rich import print
 from datetime import datetime
 import os
-from elasticsearch import helpers
-from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
 import argparse
 
 

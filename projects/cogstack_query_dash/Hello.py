@@ -1,7 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os 
-import pandas as pd
 from csdash import dbaccess, transforms
 
 # app name declaration

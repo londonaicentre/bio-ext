@@ -1,22 +1,14 @@
 import streamlit as st
-import pandas as pd
-from csdash import dbaccess
+from csdash import dbaccess, transforms
 
 load_config = st.cache_data(dbaccess.load_config)
+check_load_states = transforms.check_load_states
 #
 config = load_config("utils/config_dash.yaml")
 
 # Load existing state objects
-if "csindexes" in st.session_state:
-    csindexes = st.session_state["csindexes"]
-else:
-    st.write("csindexes not available, run page Indexes first")
-
-if "es" in st.session_state:
-    es = st.session_state["es"]
-    st.write("es is available.")
-else:
-    st.write("es is not available.")
+csindexes= check_load_states("csindexes")
+es = check_load_states("es")
 
 # Select which index to do searches on
 indexoption = st.selectbox(

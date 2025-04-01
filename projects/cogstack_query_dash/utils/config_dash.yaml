@@ -184,3 +184,9 @@ examplequery: {
         }
     }
 }
+
+# Notes
+#clinical_carenotes: `gstt_clinical_carenotes_documents_20230123` this sounds like a random notes during in patient stay like free text progress notes. mainly by AHP 
+#clinic_letters: `gstt_clinical_epr_letters_20230123`  looks like clinic letters **HIGH YIELD**
+#clinical_observations: `gstt_clinical_epr_observations_20230123`
+#clinical_noting: `gstt_clinical_noting` random notes again 

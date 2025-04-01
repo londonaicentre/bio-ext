@@ -1,12 +1,12 @@
 import yaml
 import pandas as pd
-from elasticsearch import helpers
 from bioext.elastic_utils import ElasticsearchSession, GsttProxyNode
 from datetime import datetime
 
 def load_config(path):
     """
     simple function to load config.yaml returning dict.
+    provide 'path' as argument path. 
     """
     with open(path, "r") as file:
         yamlvalues = yaml.safe_load(file)
@@ -14,7 +14,9 @@ def load_config(path):
 
 
 def connect_cogstack():
-    """simple function to establish elastic search session using bio-ext"""
+    """simple function to establish elastic search session using bio-ext
+    uses API mode. will need API key in .env 
+    """
     session = ElasticsearchSession(conn_mode="API", proxy=GsttProxyNode)
     return session.es
 

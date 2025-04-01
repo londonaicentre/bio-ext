@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-from collections import Counter, defaultdict
+from collections import Counter
 
 
 def global_overview(_es, indexlist):
     """ "
-    function to help create a general over view of
+    function to help create a general over view of entire cogstack
     """
     docs = _es.cat.indices(format="json", h=["index", "docs.count"])
     sizes = _es.cat.indices(format="json", h=["index", "store.size"])
@@ -30,7 +30,7 @@ def global_overview(_es, indexlist):
 
 def characterisedf(_data):
     """
-    given data, it does basic EDA
+    given data as pandas dataframe, it does basic EDA
 
     """
     x = _data.shape
@@ -60,8 +60,27 @@ def characterisedf(_data):
 
 
 def get_summary(_es, index):
-    """to gain 5 number summary of the index ones"""
+    """to return fields available in index"""
     mapping = _es.indices.get_mapping(index=index)
     properties = mapping[index]["mappings"]["properties"]
 
     return properties
+
+def check_load_states(string):
+    """
+    check the presence of a session state object from streamlit and if not present, inform the user. 
+
+    Args:
+        string (stream lit state object): pass as string 
+
+    Returns:
+        stream lit state: will return and assign.
+    """
+    if string in st.session_state:
+        response = st.session_state[string]
+    else:
+        st.write(f"{string}not available")
+    
+    return response
+    
+    

@@ -1,38 +1,7 @@
 import streamlit as st
 import json
-import os
 from csdash import dbaccess, transforms
-import pandas as pd
 
-# TODO: refactor session state checkers
-# TODO: make a small lambda that pretty prints headers
-#
-# ENVIRON 
-# Load existing state objects
-if "csindexes" in st.session_state:
-    csindexes = st.session_state["csindexes"]
-else:
-    st.write("cogstack_indexes not available")
-
-if "es" in st.session_state:
-    es = st.session_state["es"]
-    st.write("es is available.")
-else:
-    st.write("es is not available.")
-
-if "config" in st.session_state:
-    config = st.session_state["config"]
-    st.write("config is available.")
-else:
-    st.write("config is not available.")
-
-if "cogstack_brief" in st.session_state:
-    cogstack_brief = st.session_state["cogstack_brief"]
-    st.write("cogstack brief is here.")
-else:
-    st.write("cogstack_brief is not available")
-
-kwremovelist = config["escapekwlist"]
 
 ## APPLYING DECORATORS
 fetch_sampledata = st.cache_data(dbaccess.fetch_sampledata)
@@ -41,8 +10,19 @@ mappingtypes = st.cache_data(dbaccess.get_mapping_types)
 get_top_10kw = st.cache_data(dbaccess.get_top_10kw)
 get_date_ranges = st.cache_data(dbaccess.get_date_ranges)
 get_num_stats = st.cache_data(dbaccess.get_num_stats)
+check_load_states = transforms.check_load_states
+# custom functions to help display dataframes for each expander.
 
-# custom functions
+#
+# ENVIRON 
+# Load existing state objects
+csindexes = check_load_states("csindexes")
+es = check_load_states("es")
+config = check_load_states("config")
+cogstack_brief = check_load_states("cogstack_brief")
+
+# load list of keywords to remove. 
+kwremovelist = config["escapekwlist"]
 
 def display_dataframe_overview(index,_es,kwremovelist):
     overview_df = cogstack_brief[cogstack_brief["index"] == index ].to_dict("records")[0]
