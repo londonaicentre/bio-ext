@@ -12,4 +12,7 @@ dependencies = [
     "pyyaml",
     "marimo>=0.11.30",
     "nltk>=3.9.1",
+    "ipykernel>=6.29.5",
+    "rich>=14.0.0",
+    "openpyxl>=3.1.5",
 ]
