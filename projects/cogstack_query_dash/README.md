@@ -59,6 +59,13 @@ It does 4 things
 * `congif_dash.yaml` has basic configs saved without any secrets
 * `Hello.py` is an entry into the project.
 
+* Features : 
+> landing page give you overall general summary how big are each indexes, how many fields there are.
+> page 1 give you detail of each index by showing what the field types are "date", "keyword" ,"text". Then it shows you 100 or whatever selected sample in a small dataframe which is interactive.
+> page 2: gives you the elastic search queries but the correct and uptodate one only work if your folder structure is `../bio-ext` and `../sde_aic_internal_docs` otherwise it will serve a "not-always-up-to-date" file from `/utils`
+> page 3 : allow you to copy and paste search query and have a sample of the search
+
+
 ### Run via
 at project root execute `streamlit run Hello.py`
 
