@@ -1,0 +1,34 @@
+118,755 DNA
+89,185 document_Name.keyword : ("DNA") AND document_Content : ("Reason for referral:")
+ 2,390 document_Name.keyword : ("DNA") AND document_Content : ("REQUEST FOR DNA ANALYSIS")
+ 9,722 document_Name.keyword : ("DNA") AND document_Content : ("been extracted and stored")
+19,971 document_Name.keyword : ("DNA") NOT document_Content : ("Reason for referral:") NOT document_Content : ("REQUEST FOR DNA ANALYSIS") NOT  document_Content : ("been extracted and stored")
+        dystrophin, fragile X - FRAXA/FRAXE, cystic fibrosis, Huntington's 
+ 5,398 document_Name.keyword : ("DNA") NOT document_Content :("Reason for referral") NOT document_Content : ("REQUEST FOR DNA ANALYSIS") NOT  document_Content : ("been extracted and stored") NOT document_Content : ("PCR") NOT document_Content :("UREASON") NOT document_Content :("UUREASON") NOT document_Content :("referralu:")
+
+ 99,186 document_Content : ("Reason for referral:") DNA and karyotype testing
+109,972 document_Content :("Reason for referral") OR document_Content :("UREASON") OR document_Content :("UUREASON") OR document_Content :("referralu:")
+ 99,970 DNA, 1 FISH, 6 PCR, 0 karyotype
+
+
+120,967 FISH
+68,351 document_Name.keyword : ("FISH") AND document_Content : ("NO ABNORMALITY DETECTED")
+13,220 document_Name.keyword : ("FISH") AND document_Content : ("ABNORMAL RESULT")
+ or "confirm* the presence of" 22+4
+"abnormality" 72,784
+
+MLPA SUBTELOMERE TEST - 360
+39,062 document_Name.keyword : ("FISH") NOT document_Content : ("NO ABNORMALITY DETECTED") NOT document_Content : ("ABNORMAL RESULT") NOT document_Content : ("MLPA SUBTELOMERE TEST")
+
+
+88,567 PCR
+69,387 document_Name.keyword : ("PCR") AND document_Content : ("NO ABNORMALITY DETECTED")
+14,157 document_Name.keyword : ("PCR") AND document_Content : ("ABNORMAL RESULT")
+ 5,050 document_Name.keyword : ("PCR") NOT document_Content : ("NO ABNORMALITY DETECTED") NOT document_Content : ("ABNORMAL RESULT")
+    PRELIMINARY REPORT, UNSUITABLE SAMPLE, Microsatellite, QF_PCR
+
+   175 document_Name.keyword : ("PCR") NOT document_Content : ("NO ABNORMALITY DETECTED") NOT document_Content : ("ABNORMAL RESULT") 
+        NOT document_Content : ("UNSUITABLE SAMPLE") NOT document_Content : ("PRELIMINARY") NOT document_Content : ("Microsatellite") 
+        NOT document_Content : ("QF-PCR") NOT document_Content : ("ANEUPLOIDY")
+
+document_Name.keyword: Biochem is on the protein level
