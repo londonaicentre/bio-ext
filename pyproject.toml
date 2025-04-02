@@ -10,18 +10,22 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11.2"
 dependencies = [
-    "mlflow[extras]",
-    "boto3",
     "requests",
     "evaluate",
     "elasticsearch",
     "elasticsearch-dsl",
     "elastic-transport",
+    "doccano-client @ git+https://github.com/drjzhn/doccano-client-urrlib-fix.git",
+]
+
+[project.optional-dependencies]
+ml = [
+    "mlflow[extras]",
+    "boto3",
     "transformers",
     "datasets",
     "torch",
     "huggingface-hub",
-    "doccano-client @ git+https://github.com/drjzhn/doccano-client-urrlib-fix.git",
 ]
 
 [build-system]
