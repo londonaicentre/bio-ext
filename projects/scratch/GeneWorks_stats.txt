@@ -8,7 +8,9 @@
 
  99,186 document_Content : ("Reason for referral:") DNA and karyotype testing
 109,972 document_Content :("Reason for referral") OR document_Content :("UREASON") OR document_Content :("UUREASON") OR document_Content :("referralu:")
- 99,970 DNA, 1 FISH, 6 PCR, 0 karyotype
+ 99,970 DNA, 1 FISH, 6 PCR, 28 karyotype, lab report - general, correspondence - general
+    DNA sendaway report, patient generic 7845 (PDF - bad quality)
+
 
 
 120,967 FISH
