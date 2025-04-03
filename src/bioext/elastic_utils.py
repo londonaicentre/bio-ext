@@ -12,8 +12,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# thanks @LAdams for implementing required http proxy
 class GsttProxyNode(RequestsHttpNode):
+    """Custom RequestsHttpNode to handle proxy settings for Elasticsearch at GSTT.
+
+    Requires the `http_proxy` environment variable to be set."""
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.proxy_endpoint = os.getenv("http_proxy")
@@ -122,9 +125,31 @@ class ElasticsearchSession:
     def list_indices(self):
         return self.es.indices.get_alias(index="*")
 
-    def bulk_load_documents(self, index_name, documents, progress_callback=None):
+    def bulk_load_documents(
+        self,
+        index_name: str,
+        documents: Iterable,
+        progress_callback: None | Callable = None,
+    ) -> int:
         """
-        Bulk load documents into Elasticsearch.
+        Bulk load documents into Elasticsearch index using streaming_bulk.
+        This function returns the number of successful document loads, whilst providing a
+        callback to track progress.
+
+        Args:
+            index_name (str): The name of the Elasticsearch index.
+            documents (Iterable): An iterable of documents to be indexed. (e.g. list of dicts)
+            progress_callback (callable, optional): A callback function to track progress.
+                It should accept a single argument indicating the number of documents processed.
+                Can be useful for displaying progress in a GUI or logging. (e.g. tqdm)
+        Returns:
+            int: The number of successfully indexed documents.
+        Example:
+            >>> es.bulk_load_documents(
+                    index_name="my_index",
+                    documents=[{"doc1": "data"}, {"doc2": "data"}],
+                    progress_callback=lambda x: print(f"Processed {x} documents")
+                )
         """
 
         def doc_generator():
@@ -132,7 +157,7 @@ class ElasticsearchSession:
                 yield doc
 
         successes = 0
-        for ok, action in helpers.streaming_bulk(
+        for ok, _ in helpers.streaming_bulk(
             client=self.es,
             index=index_name,
             actions=doc_generator(),
@@ -144,14 +169,36 @@ class ElasticsearchSession:
         return successes
 
     def bulk_retrieve_documents(
-        self, index_name, query, scroll="2m", save_to_file=None
-    ):
+        self,
+        index_name: str,
+        query: dict,
+        scroll: str = "2m",
+        save_to_file: None | str | Path = None,
+    ) -> Iterable[dict[str, Any]]:
         """
-        Retrieve documents from Elasticsearch using scroll API
+        Retrieve documents from Elasticsearch using scroll API, and optionally save them to files.
+
+        Args:
+            index_name (str): The name of the Elasticsearch index.
+            query (dict): The query to filter the documents.
+            scroll (str): The scroll time for the search context. Default is "2m".
+            save_to_file (str or Path, optional): Directory to save the retrieved documents.
+                If None, documents are not saved to files.
+
+        Returns:
+            Iterable[dict]: An iterable of documents retrieved from Elasticsearch.
+
+        Example:
+            >>> es.bulk_retrieve_documents(
+                    index_name="my_index",
+                    query={"match_all": {}},
+                    scroll="2m",
+                    save_to_file="/path/to/save"
+                )
         """
         docs = helpers.scan(
             client=self.es,
-            query={"query": query},
+            query=query,
             scroll=scroll,
             index=index_name,
         )
