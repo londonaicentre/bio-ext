@@ -118,19 +118,6 @@ class ElasticsearchSession:
     def list_indices(self):
         return self.es.indices.get_alias(index="*")
 
-    def _yield_doc(self, data_file_path):
-        """Reads the file through csv.DictReader() and for each row
-        yields a single document. This function is passed into the bulk()
-        helper to create many documents in sequence.
-        """
-        # load json from data file
-        try:
-            with open(data_file_path, "r") as file:
-                data = json.load(file)
-                yield from data
-        except Exception as e:
-            print(f"Failed to load samples: {str(e)}")
-
     def bulk_load_documents(self, index_name, documents, progress_callback=None):
         """
         Bulk load documents into Elasticsearch.
