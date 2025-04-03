@@ -26,76 +26,38 @@ class GsttProxyNode(RequestsHttpNode):
         }
 
 
-class ElasticsearchSession:
+class BaseElasticsearchSession:
+    """Base class for Elasticsearch sessions with common functionality"""
+
     def __init__(
         self,
-        proxy: Optional[RequestsHttpNode] = None,
-        conn_mode: Optional[Literal["HTTP"] | Literal["API"]] = "HTTP",
+        elasticsearch_server: str = os.getenv(
+            "ELASTICSEARCH_SERVER", "https://sv-pr-elastic01.gstt.local:9200"
+        ),
+        proxy_node: Optional[RequestsHttpNode] = None,
+        elasticsearch_client: Optional[Elasticsearch] = None,
     ) -> None:
-        """
-        Instantiates ElasticsearchSession for use across bio-ext, with flexibility to add 
-        Proxy Settings or connection modes.
-
-        Note that although the ElasticsearchSession may be created, it will not validate the 
-        connection. This can be achieved with `<session>.es.info()` for example.
-
-        Args:
-            proxy: Optional RequestsHttpNode that enables use of HTTP Proxies if required. By 
-                default is not enabled.
-            conn_mode: By default uses HTTP mode which is widely deprecated; API mode is 
-                other option which uses different environment varaibles.
-        """
+        self.es_server = elasticsearch_server
+        self.proxy_node = proxy_node
         requests.packages.urllib3.disable_warnings(
             requests.packages.urllib3.exceptions.InsecureRequestWarning
         )
-
-        # set to GSTT server by default
-        self.es_server = os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01.gstt.local:9200")
-
-        # Use optional proxy node (useful if running in Proxied Environment)
-        self.proxy_node = proxy
-
-        if conn_mode == "API":
-            self.api_id = os.getenv("ELASTIC_API_ID")
-            self.api_key = os.getenv("ELASTIC_API_KEY")
-
-            if not all([self.api_id, self.api_key]):
-                raise ValueError(
-                    "Check that ELASTIC_API_ID and ELASTIC_API_KEY are in env variables"
-                )
-
-            self.es = Elasticsearch(
-                hosts=self.es_server,
-                api_key=(self.api_id, self.api_key),
-                node_class=self.proxy_node,
-                verify_certs=False,
-                ssl_show_warn=False,
-            )
-
-        elif conn_mode == "HTTP":
-            self.es_user = os.getenv("ELASTIC_USER")
-            self.es_pwd = os.getenv("ELASTIC_PWD")
-
-            if not all([self.es_user, self.es_pwd]):
-                raise ValueError(
-                    "Check ELASTIC_USER and ELASTIC_PWD are in env variables"
-                )
-
-            self.es = Elasticsearch(
-                hosts=self.es_server,
-                # http_auth has been deprecated
-                basic_auth=(
-                    self.es_user,
-                    self.es_pwd,
-                ),
-                verify_certs=False,
-                ssl_show_warn=False,
-            )
-
+        if elasticsearch_client:
+            self.es = elasticsearch_client
         else:
-            raise ValueError("Argument conn_mode must be 'HTTP' or 'API'")
+            self._configure_client()
 
-    def create_index(self, index_name, mappings, settings=None, overwrite=False):
+    def _configure_client(self):
+        """Abstract method to be implemented by child classes"""
+        raise NotImplementedError
+
+    def create_index(
+        self,
+        index_name: str,
+        mappings: dict[Any],
+        settings: dict[Any] = None,
+        overwrite: bool = False,
+    ):
         """
         Creates an index in Elasticsearch with option to overwrite existing one.
         Requires a config input (mappings) that describes fields, e.g.:
@@ -259,3 +221,118 @@ class ElasticsearchSession:
         random_ids = [doc["_id"] for doc in res]
 
         return random_ids
+
+
+# == Override classes for different authentication methods ==
+class ElasticsearchManualAuthSession(BaseElasticsearchSession):
+    """Elasticsearch session with manually configured authentication"""
+
+    def __init__(self, elasticsearch_client: Elasticsearch) -> None:
+        self.es = elasticsearch_client
+
+
+class ElasticsearchApiAuthSession(BaseElasticsearchSession):
+    """Elasticsearch session using API key authentication"""
+
+    def _configure_client(self):
+        api_id = os.getenv("ELASTIC_API_ID")
+        api_key = os.getenv("ELASTIC_API_KEY")
+
+        if not all([api_id, api_key]):
+            raise ValueError(
+                "Check ELASTIC_API_ID and ELASTIC_API_KEY are in env variables"
+            )
+
+        self.es = Elasticsearch(
+            hosts=self.es_server,
+            api_key=(api_id, api_key),
+            node_class=self.proxy_node,
+            verify_certs=False,
+            ssl_show_warn=False,
+        )
+
+
+class ElasticsearchUserAuthSession(BaseElasticsearchSession):
+    """Elasticsearch session using username/password authentication"""
+
+    def _configure_client(self):
+        es_user = os.getenv("ELASTIC_USER")
+        es_pwd = os.getenv("ELASTIC_PWD")
+
+        if not all([es_user, es_pwd]):
+            raise ValueError("Check ELASTIC_USER and ELASTIC_PWD are in env variables")
+
+        self.es = Elasticsearch(
+            hosts=self.es_server,
+            basic_auth=(es_user, es_pwd),
+            verify_certs=False,
+            ssl_show_warn=False,
+        )
+
+
+class ElasticsearchSession(BaseElasticsearchSession):
+    """Deprecated: Use ElasticsearchApiAuthSession or ElasticsearchUserAuthSession instead"""
+
+    def __init__(
+        self,
+        proxy_node: RequestsHttpNode | None = None,
+        conn_mode: Literal["HTTP"] | Literal["API"] = "HTTP",
+    ) -> None:
+        import warnings
+
+        self.proxy_node = proxy_node
+
+        warnings.warn(
+            "ElasticsearchSession is deprecated. Use ElasticsearchApiAuthSession or ElasticsearchUserAuthSession instead",
+            DeprecationWarning,
+        )
+
+        requests.packages.urllib3.disable_warnings(
+            requests.packages.urllib3.exceptions.InsecureRequestWarning
+        )
+
+        # set to GSTT server by default
+        self.es_server = os.getenv(
+            "ELASTIC_SERVER", "https://sv-pr-elastic01.gstt.local:9200"
+        )
+
+        # Use optional proxy node (useful if running in Proxied Environment)
+        if conn_mode == "API":
+            self.api_id = os.getenv("ELASTIC_API_ID")
+            self.api_key = os.getenv("ELASTIC_API_KEY")
+
+            if not all([self.api_id, self.api_key]):
+                raise ValueError(
+                    "Check that ELASTIC_API_ID and ELASTIC_API_KEY are in env variables"
+                )
+
+            self.es = Elasticsearch(
+                hosts=self.es_server,
+                api_key=(self.api_id, self.api_key),
+                node_class=self.proxy_node,
+                verify_certs=False,
+                ssl_show_warn=False,
+            )
+
+        elif conn_mode == "HTTP":
+            self.es_user = os.getenv("ELASTIC_USER")
+            self.es_pwd = os.getenv("ELASTIC_PWD")
+
+            if not all([self.es_user, self.es_pwd]):
+                raise ValueError(
+                    "Check ELASTIC_USER and ELASTIC_PWD are in env variables"
+                )
+
+            self.es = Elasticsearch(
+                hosts=self.es_server,
+                # http_auth has been deprecated
+                basic_auth=(
+                    self.es_user,
+                    self.es_pwd,
+                ),
+                verify_certs=False,
+                ssl_show_warn=False,
+            )
+
+        else:
+            raise ValueError("Argument conn_mode must be 'HTTP' or 'API'")
