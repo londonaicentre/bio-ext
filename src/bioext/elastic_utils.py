@@ -208,13 +208,3 @@ class ElasticsearchSession:
         random_ids = [doc["_id"] for doc in res]
 
         return random_ids
-
-    def get_document_by_id(self, index_name, doc_id):
-        """
-        Retrieve single document based on its ID
-        """
-        try:
-            return self.es.get(index=index_name, id=doc_id)
-        except Exception as e:
-            print(f"Error retrieving document {doc_id}: {e}")
-            return None
