@@ -16,7 +16,6 @@ dependencies = [
     "elasticsearch-dsl",
     "elastic-transport",
     "doccano-client @ git+https://github.com/drjzhn/doccano-client-urrlib-fix.git",
-    "python-dotenv>=1.1.0",
 ]
 
 [project.optional-dependencies]
