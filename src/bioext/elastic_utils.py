@@ -282,13 +282,10 @@ class ElasticsearchSession(BaseElasticsearchSession):
         proxy_node: RequestsHttpNode | None = None,
         conn_mode: Literal["HTTP"] | Literal["API"] = "HTTP",
     ) -> None:
-        import warnings
-
         self.proxy_node = proxy_node
 
-        warnings.warn(
+        logger.warn(
             "ElasticsearchSession is deprecated. Use ElasticsearchApiAuthSession or ElasticsearchUserAuthSession instead",
-            DeprecationWarning,
         )
 
         requests.packages.urllib3.disable_warnings(
