@@ -181,25 +181,46 @@ class ElasticsearchSession:
 
         return docs
 
-    def get_random_doc_ids(self, index_name, size, query=None):
+    def get_random_doc_ids(
+        self, index_name: str, size: int, query: None | dict[Any]
+    ) -> list[str]:
         """
-        Get a random subset of document IDs from a given document index
+        Retrieve random document IDs from the specified index.
+
+        Args:
+            index_name (str): The name of the Elasticsearch index.
+            size (int): The number of random document IDs to retrieve.
+            query (dict[Any], optional): An optional query to filter the documents.
+                Note: The query should be a valid Elasticsearch query context/predicate only - not a complete query.
+                See here for more: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-filter-context.html
+        Returns:
+            list[str]: A list of random document IDs.
+
+        Example:
+            >>> es.get_random_doc_ids("my_index", size=10, query={"match": {"document_Content": "BRCA"}})
         """
-        # If no query provided, match all documents
-        if query is None:
-            query = {"match_all": {}}
+        # Query to retrieve random documents using random_score
+        query = {
+            "_source": False,
+            "size": size,
+            "query": {
+                "function_score": {
+                    "functions": {"random_score": {}},
+                },
+                "query": query if query else {},
+            },
+        }
 
-        # return all document IDs first!
-        all_ids = [
-            doc["_id"]
-            for doc in self.bulk_retrieve_documents(
-                index_name=index_name,
-                query=query,
-            )
-        ]
+        # Use the bulk_retrieve_documents method to get the documents
+        res = self.bulk_retrieve_documents(
+            index_name=index_name,
+            query=query,
+            scroll="2m",
+        )
 
-        # random sample
-        return random.sample(all_ids, min(size, len(all_ids)))
+        random_ids = [doc["_id"] for doc in res]
+
+        return random_ids
 
     def get_document_by_id(self, index_name, doc_id):
         """
