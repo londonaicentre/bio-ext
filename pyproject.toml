@@ -38,6 +38,5 @@ packages = ["src/bioext"]
 [tool.hatch.metadata]
 allow-direct-references = true
 
-# "requests-toolbelt==1.0.0", # Required for doccano-client #
-# "vcrpy==4.4.0",             # Required for doccano-client #
-# "urllib3==1.26"             # This works for doccano-client 1.2.8 but ?breaks elastic#
+[dependency-groups]
+dev = ["pytest>=8.3.5"]

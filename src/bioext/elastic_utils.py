@@ -1,15 +1,22 @@
 import json
+import logging
 import os
-import random
-from typing import Optional, Literal
+from pathlib import Path
+from typing import Any, Callable, Iterable, Literal, Optional
 
 import requests
 from elastic_transport import RequestsHttpNode
 from elasticsearch import Elasticsearch, helpers
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# thanks @LAdams for implementing required http proxy
+
 class GsttProxyNode(RequestsHttpNode):
+    """Custom RequestsHttpNode to handle proxy settings for Elasticsearch at GSTT.
+
+    Requires the `http_proxy` environment variable to be set."""
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.proxy_endpoint = os.getenv("http_proxy")
@@ -19,35 +26,277 @@ class GsttProxyNode(RequestsHttpNode):
         }
 
 
-class ElasticsearchSession:
+class BaseElasticsearchSession:
+    """Base class for Elasticsearch sessions with common functionality"""
+
     def __init__(
         self,
-        proxy: Optional[RequestsHttpNode] = None,
-        conn_mode: Optional[Literal["HTTP"] | Literal["API"]] = "HTTP",
+        elasticsearch_server: str = os.getenv(
+            "ELASTICSEARCH_SERVER", "https://sv-pr-elastic01.gstt.local:9200"
+        ),
+        proxy_node: Optional[RequestsHttpNode] = None,
+        elasticsearch_client: Optional[Elasticsearch] = None,
     ) -> None:
-        """
-        Instantiates ElasticsearchSession for use across bio-ext, with flexibility to add 
-        Proxy Settings or connection modes.
+        self.es_server = elasticsearch_server
+        self.proxy_node = proxy_node
+        requests.packages.urllib3.disable_warnings(
+            requests.packages.urllib3.exceptions.InsecureRequestWarning
+        )
+        if elasticsearch_client:
+            self.es = elasticsearch_client
+        else:
+            self._configure_client()
 
-        Note that although the ElasticsearchSession may be created, it will not validate the 
-        connection. This can be achieved with `<session>.es.info()` for example.
+    def _configure_client(self):
+        """Abstract method to be implemented by child classes"""
+        raise NotImplementedError
+
+    def create_index(
+        self,
+        index_name: str,
+        mappings: dict[Any],
+        settings: dict[Any] = None,
+        overwrite: bool = False,
+    ):
+        """
+        Creates an index in Elasticsearch with option to overwrite existing one.
+        Requires a config input (mappings) that describes fields, e.g.:
+            "mappings": {
+                "properties": {
+                    "seed": {"type": "integer"},
+                    "text": {"type": "text"}
+                }
+            }
+        """
+        if settings is None:
+            settings = {"number_of_shards": 1}
+
+        if overwrite:
+            # delete index if it exists
+            self.es.indices.delete(index=index_name, ignore=[400, 404])
+
+        self.es.indices.create(
+            index=index_name,
+            body={
+                "settings": settings,
+                "mappings": mappings,
+            },
+            ignore=400,
+        )
+
+    def list_indices(self):
+        return self.es.indices.get_alias(index="*")
+
+    def bulk_load_documents(
+        self,
+        index_name: str,
+        documents: Iterable,
+        progress_callback: None | Callable = None,
+    ) -> int:
+        """
+        Bulk load documents into Elasticsearch index using streaming_bulk.
+        This function returns the number of successful document loads, whilst providing a
+        callback to track progress.
 
         Args:
-            proxy: Optional RequestsHttpNode that enables use of HTTP Proxies if required. By 
-                default is not enabled.
-            conn_mode: By default uses HTTP mode which is widely deprecated; API mode is 
-                other option which uses different environment varaibles.
+            index_name (str): The name of the Elasticsearch index.
+            documents (Iterable): An iterable of documents to be indexed. (e.g. list of dicts)
+            progress_callback (callable, optional): A callback function to track progress.
+                It should accept a single argument indicating the number of documents processed.
+                Can be useful for displaying progress in a GUI or logging. (e.g. tqdm)
+        Returns:
+            int: The number of successfully indexed documents.
+        Example:
+            >>> es.bulk_load_documents(
+                    index_name="my_index",
+                    documents=[{"doc1": "data"}, {"doc2": "data"}],
+                    progress_callback=lambda x: print(f"Processed {x} documents")
+                )
         """
+
+        def doc_generator():
+            for doc in documents:
+                yield doc
+
+        successes = 0
+        for ok, _ in helpers.streaming_bulk(
+            client=self.es,
+            index=index_name,
+            actions=doc_generator(),
+        ):
+            successes += ok
+            if progress_callback:
+                progress_callback(1)
+
+        return successes
+
+    def bulk_retrieve_documents(
+        self,
+        index_name: str,
+        query: dict,
+        scroll: str = "2m",
+        save_to_file: None | str | Path = None,
+    ) -> Iterable[dict[str, Any]]:
+        """
+        Retrieve documents from Elasticsearch using scroll API, and optionally save them to files.
+
+        Args:
+            index_name (str): The name of the Elasticsearch index.
+            query (dict): The query to filter the documents.
+            scroll (str): The scroll time for the search context. Default is "2m".
+            save_to_file (str or Path, optional): Directory to save the retrieved documents.
+                If None, documents are not saved to files.
+
+        Returns:
+            Iterable[dict]: An iterable of documents retrieved from Elasticsearch.
+
+        Example:
+            >>> es.bulk_retrieve_documents(
+                    index_name="my_index",
+                    query={"match_all": {}},
+                    scroll="2m",
+                    save_to_file="/path/to/save"
+                )
+        """
+        docs = helpers.scan(
+            client=self.es,
+            query=query,
+            scroll=scroll,
+            index=index_name,
+        )
+
+        # save queried documents to file
+        if save_to_file is not None:
+            os.makedirs(save_to_file, exist_ok=True)
+            processed_count = 0
+            for hit in docs:
+                doc_id = hit["_id"]
+                file_path = os.path.join(save_to_file, f"{doc_id}.json")
+                with open(file_path, "w") as f:
+                    json.dump(hit, f, indent=2)
+                processed_count += 1
+                if processed_count % 1000 == 0:
+                    logger.debug(f"Up to {processed_count} docs...")
+            logger.info(f"{processed_count} docs were downloaded")
+
+        return docs
+
+    def get_random_doc_ids(
+        self, index_name: str, size: int, query: None | dict[Any]
+    ) -> list[str]:
+        """
+        Retrieve random document IDs from the specified index.
+
+        Args:
+            index_name (str): The name of the Elasticsearch index.
+            size (int): The number of random document IDs to retrieve.
+            query (dict[Any], optional): An optional query to filter the documents.
+                Note: The query should be a valid Elasticsearch query context/predicate only - not a complete query.
+                See here for more: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-filter-context.html
+        Returns:
+            list[str]: A list of random document IDs.
+
+        Example:
+            >>> es.get_random_doc_ids("my_index", size=10, query={"match": {"document_Content": "BRCA"}})
+        """
+        # Query to retrieve random documents using random_score
+        query = {
+            "_source": False,
+            "size": size,
+            "query": {
+                "function_score": {
+                    "functions": {"random_score": {}},
+                },
+                "query": query if query else {},
+            },
+        }
+
+        # Use the bulk_retrieve_documents method to get the documents
+        res = self.bulk_retrieve_documents(
+            index_name=index_name,
+            query=query,
+            scroll="2m",
+        )
+
+        random_ids = [doc["_id"] for doc in res]
+
+        return random_ids
+
+
+# == Override classes for different authentication methods ==
+class ElasticsearchManualAuthSession(BaseElasticsearchSession):
+    """Elasticsearch session with manually configured authentication"""
+
+    def __init__(self, elasticsearch_client: Elasticsearch) -> None:
+        self.es = elasticsearch_client
+
+
+class ElasticsearchApiAuthSession(BaseElasticsearchSession):
+    """Elasticsearch session using API key authentication"""
+
+    def _configure_client(self):
+        api_id = os.getenv("ELASTIC_API_ID")
+        api_key = os.getenv("ELASTIC_API_KEY")
+
+        if not all([api_id, api_key]):
+            raise ValueError(
+                "Check ELASTIC_API_ID and ELASTIC_API_KEY are in env variables"
+            )
+
+        self.es = Elasticsearch(
+            hosts=self.es_server,
+            api_key=(api_id, api_key),
+            node_class=self.proxy_node,
+            verify_certs=False,
+            ssl_show_warn=False,
+        )
+
+
+class ElasticsearchUserAuthSession(BaseElasticsearchSession):
+    """Elasticsearch session using username/password authentication"""
+
+    def _configure_client(self):
+        es_user = os.getenv("ELASTIC_USER")
+        es_pwd = os.getenv("ELASTIC_PWD")
+
+        if not all([es_user, es_pwd]):
+            raise ValueError("Check ELASTIC_USER and ELASTIC_PWD are in env variables")
+
+        self.es = Elasticsearch(
+            hosts=self.es_server,
+            basic_auth=(es_user, es_pwd),
+            verify_certs=False,
+            ssl_show_warn=False,
+        )
+
+
+class ElasticsearchSession(BaseElasticsearchSession):
+    """Deprecated: Use ElasticsearchApiAuthSession or ElasticsearchUserAuthSession instead"""
+
+    def __init__(
+        self,
+        proxy_node: RequestsHttpNode | None = None,
+        conn_mode: Literal["HTTP"] | Literal["API"] = "HTTP",
+    ) -> None:
+        import warnings
+
+        self.proxy_node = proxy_node
+
+        warnings.warn(
+            "ElasticsearchSession is deprecated. Use ElasticsearchApiAuthSession or ElasticsearchUserAuthSession instead",
+            DeprecationWarning,
+        )
+
         requests.packages.urllib3.disable_warnings(
             requests.packages.urllib3.exceptions.InsecureRequestWarning
         )
 
         # set to GSTT server by default
-        self.es_server = os.getenv("ELASTIC_SERVER", "https://sv-pr-elastic01.gstt.local:9200")
+        self.es_server = os.getenv(
+            "ELASTIC_SERVER", "https://sv-pr-elastic01.gstt.local:9200"
+        )
 
         # Use optional proxy node (useful if running in Proxied Environment)
-        self.proxy_node = proxy
-
         if conn_mode == "API":
             self.api_id = os.getenv("ELASTIC_API_ID")
             self.api_key = os.getenv("ELASTIC_API_KEY")
@@ -87,126 +336,3 @@ class ElasticsearchSession:
 
         else:
             raise ValueError("Argument conn_mode must be 'HTTP' or 'API'")
-
-    def create_index(self, index_name, mappings, settings=None, overwrite=False):
-        """
-        Creates an index in Elasticsearch with option to overwrite existing one.
-        Requires a config input (mappings) that describes fields, e.g.:
-            "mappings": {
-                "properties": {
-                    "seed": {"type": "integer"},
-                    "text": {"type": "text"}
-                }
-            }
-        """
-        if settings is None:
-            settings = {"number_of_shards": 1}
-
-        if overwrite:
-            # delete index if it exists
-            self.es.indices.delete(index=index_name, ignore=[400, 404])
-
-        self.es.indices.create(
-            index=index_name,
-            body={
-                "settings": settings,
-                "mappings": mappings,
-            },
-            ignore=400,
-        )
-
-    def list_indices(self):
-        return self.es.indices.get_alias(index="*")
-
-    def _yield_doc(self, data_file_path):
-        """Reads the file through csv.DictReader() and for each row
-        yields a single document. This function is passed into the bulk()
-        helper to create many documents in sequence.
-        """
-        # load json from data file
-        try:
-            with open(data_file_path, "r") as file:
-                data = json.load(file)
-                yield from data
-        except Exception as e:
-            print(f"Failed to load samples: {str(e)}")
-
-    def bulk_load_documents(self, index_name, documents, progress_callback=None):
-        """
-        Bulk load documents into Elasticsearch.
-        """
-
-        def doc_generator():
-            for doc in documents:
-                yield doc
-
-        successes = 0
-        for ok, action in helpers.streaming_bulk(
-            client=self.es,
-            index=index_name,
-            actions=doc_generator(),
-        ):
-            successes += ok
-            if progress_callback:
-                progress_callback(1)
-
-        return successes
-
-    def bulk_retrieve_documents(
-        self, index_name, query, scroll="2m", save_to_file=None
-    ):
-        """
-        Retrieve documents from Elasticsearch using scroll API
-        """
-        docs = helpers.scan(
-            client=self.es,
-            query={"query": query},
-            scroll=scroll,
-            index=index_name,
-        )
-
-        # save queried documents to file
-        if save_to_file is not None:
-            os.makedirs(save_to_file, exist_ok=True)
-            processed_count = 0
-            for hit in docs:
-                doc_id = hit["_id"]
-                file_path = os.path.join(save_to_file, f"{doc_id}.json")
-                with open(file_path, "w") as f:
-                    json.dump(hit, f, indent=2)
-                processed_count += 1
-                if processed_count % 1000 == 0:
-                    print(f"Up to {processed_count} docs...")
-            print(f"{processed_count} docs were downloaded")
-
-        return docs
-
-    def get_random_doc_ids(self, index_name, size, query=None):
-        """
-        Get a random subset of document IDs from a given document index
-        """
-        # If no query provided, match all documents
-        if query is None:
-            query = {"match_all": {}}
-
-        # return all document IDs first!
-        all_ids = [
-            doc["_id"]
-            for doc in self.bulk_retrieve_documents(
-                index_name=index_name,
-                query=query,
-            )
-        ]
-
-        # random sample
-        return random.sample(all_ids, min(size, len(all_ids)))
-
-    def get_document_by_id(self, index_name, doc_id):
-        """
-        Retrieve single document based on its ID
-        """
-        try:
-            return self.es.get(index=index_name, id=doc_id)
-        except Exception as e:
-            print(f"Error retrieving document {doc_id}: {e}")
-            return None
