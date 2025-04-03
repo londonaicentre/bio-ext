@@ -182,14 +182,14 @@ class BaseElasticsearchSession:
         return docs
 
     def get_random_doc_ids(
-        self, index_name: str, size: int, query: None | dict[Any]
+        self, index_name: str, size: int = 100, query: None | dict[Any] = None
     ) -> list[str]:
         """
         Retrieve random document IDs from the specified index.
 
         Args:
             index_name (str): The name of the Elasticsearch index.
-            size (int): The number of random document IDs to retrieve.
+            size (int): The number of random document IDs to retrieve. Defaults to 100.
             query (dict[Any], optional): An optional query to filter the documents.
                 Note: The query should be a valid Elasticsearch query context/predicate only - not a complete query.
                 See here for more: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-filter-context.html
@@ -200,25 +200,28 @@ class BaseElasticsearchSession:
             >>> es.get_random_doc_ids("my_index", size=10, query={"match": {"document_Content": "BRCA"}})
         """
         # Query to retrieve random documents using random_score
+        if size > 10_000:
+            raise ValueError(
+                "This method is not designed to get large numbers of random values. Reduce size <= 10,000"
+            )
+
         query = {
             "_source": False,
             "size": size,
             "query": {
                 "function_score": {
-                    "functions": {"random_score": {}},
-                },
-                "query": query if query else {},
+                    "query": query if query else {"match_all": {}},
+                    "functions": [{"random_score": {}}],
+                }
             },
         }
 
-        # Use the bulk_retrieve_documents method to get the documents
-        res = self.bulk_retrieve_documents(
-            index_name=index_name,
-            query=query,
-            scroll="2m",
+        res = self.es.search(
+            index=index_name,
+            body=query,
         )
 
-        random_ids = [doc["_id"] for doc in res]
+        random_ids = [doc["_id"] for doc in res["hits"]["hits"]]
 
         return random_ids
 
@@ -235,6 +238,7 @@ class ElasticsearchApiAuthSession(BaseElasticsearchSession):
     """Elasticsearch session using API key authentication"""
 
     def _configure_client(self):
+        print("SETUP")
         api_id = os.getenv("ELASTIC_API_ID")
         api_key = os.getenv("ELASTIC_API_KEY")
 
