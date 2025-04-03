@@ -1,11 +1,15 @@
 import json
+import logging
 import os
-import random
-from typing import Optional, Literal
+from pathlib import Path
+from typing import Any, Callable, Iterable, Literal, Optional
 
 import requests
 from elastic_transport import RequestsHttpNode
 from elasticsearch import Elasticsearch, helpers
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # thanks @LAdams for implementing required http proxy
@@ -163,8 +167,8 @@ class ElasticsearchSession:
                     json.dump(hit, f, indent=2)
                 processed_count += 1
                 if processed_count % 1000 == 0:
-                    print(f"Up to {processed_count} docs...")
-            print(f"{processed_count} docs were downloaded")
+                    logger.debug(f"Up to {processed_count} docs...")
+            logger.info(f"{processed_count} docs were downloaded")
 
         return docs
 
