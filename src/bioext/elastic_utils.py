@@ -285,14 +285,26 @@ def create_elasticsearch_session(
 
     Args:
         auth_type: Type of authentication to use ('api', 'user', or 'manual')
+            'api' - API key authentication: relevant environment variables are ELASTIC_API_ID and ELASTIC_API_KEY
+            'user' - Username/password authentication: relevant environment variables are ELASTIC_USER and ELASTIC_PWD
+            'manual' - Manually configured Elasticsearch client
         elasticsearch_server: Elasticsearch server URL
         elasticsearch_client: Pre-configured Elasticsearch client (for 'manual' auth only)
         use_proxy: Whether to use the GSTT proxy
 
     Returns:
-        Configured Elasticsearch session
+        Configured Elasticsearch session object
+
+    Raises:
+        ValueError: If auth_type is not one of 'api', 'user', or 'manual'
+        ValueError: If auth_type is 'manual' and elasticsearch_client is not provided
+
+    Example:
+        >>> es_session = create_elasticsearch_session(
+                auth_type="api", use_proxy=True
+            )
     """
-    proxy_node = GsttProxyNode() if use_proxy else None
+    proxy_node = GsttProxyNode if use_proxy else None
 
     if auth_type == "manual":
         if not elasticsearch_client:
