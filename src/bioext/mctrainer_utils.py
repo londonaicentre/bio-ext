@@ -31,23 +31,17 @@ class MCTDataset(MCTObj):
 @dataclass
 class MCTConceptDB(MCTObj):
     name: str=None
-    conceptdb_file: str=None    
-    
-    @property
-    def name(self) -> str:
-        return self._name
+    conceptdb_file: str=None   
 
-    @name.setter
-    def name(self, value: str):
-        if value is not None:
-            if not value[0].islower():
+    def __post_init__(self):
+        if self.name is not None:
+            if not self.name[0].islower():
                 raise ValueError("Name must start with a lowercase letter")
-            if not value.replace('_', '').isalnum():
+            if not self.name.replace('_', '').isalnum():
                 raise ValueError("Name must contain only alphanumeric characters and underscores")
-        self._name = value
 
     def __str__(self):
-        return f'{self.id} : {self.name} \t {self.conceptdb_file}'
+        return f'{getattr(self, "id", "N/A")} : {self.name} \t {self.conceptdb_file}'
 
 
 @dataclass
