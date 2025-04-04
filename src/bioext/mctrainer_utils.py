@@ -145,7 +145,7 @@ class MedCATTrainerSession:
     >>> annotations = session.get_project_annos(projects[0])
     """
 
-    def __init__(self, server=None):
+    def __init__(self, server=None, username=None, password=None):
         """Initialize the MedCATTrainerSession.
 
         Args:
@@ -154,11 +154,11 @@ class MedCATTrainerSession:
         Raises:
             MCTUtilsException: _description_
         """
-        self.username = os.getenv("MCTRAINER_USERNAME")
-        password = os.getenv("MCTRAINER_PASSWORD")
+        self.username = username or os.getenv("MCTRAINER_USERNAME")
+        self.password = password or os.getenv("MCTRAINER_PASSWORD")
         self.server = server or 'http://localhost:8001'
 
-        payload = {"username": self.username, "password": password}
+        payload = {"username": self.username, "password": self.password}
         resp = requests.post(f"{self.server}/api/api-token-auth/", json=payload)
         if 200 <= resp.status_code < 300:
             token = json.loads(resp.text)["token"]
@@ -269,12 +269,13 @@ class MedCATTrainerSession:
             'cuis': ','.join(cuis),
             'dataset': dataset.id,
             'concept_db': concept_db.id,
-            'cdb_search_filter': [cdb_search_filter.id],
             'vocab': vocab.id,
             'members': [m.id for m in members],
             'tasks': [mt.id for mt in meta_tasks],
             'relations': [rt.id for rt in rel_tasks]
         }
+        if cdb_search_filter:
+            payload['cdb_search_filter'] = [cdb_search_filter.id]
         if cuis_file:
             with open(cuis_file, 'rb') as f:
                 resp = requests.post(f'{self.server}/api/project-annotate-entities/', data=payload, files={'cuis_file': f}, headers=self.headers)
