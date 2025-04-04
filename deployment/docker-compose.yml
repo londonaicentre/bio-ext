@@ -8,7 +8,7 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
-    environment:
+    environment:  
       - discovery.type=single-node
       - ELASTIC_USERNAME=${ES_USERNAME}
       - ELASTIC_PASSWORD=${ES_PASSWORD}
@@ -111,8 +111,78 @@ services:
       resources:
         limits:
           cpus: '2'
-          memory: 2G
+          memory: 2G      
     restart: unless-stopped
+  
+  medcattrainer:
+    image: cogstacksystems/medcat-trainer:v2.18.1
+    container_name: bioextmedcattrainer
+    networks:
+      - bioext_network    
+    volumes:
+      - ./medcattrainer/configs:/home/configs
+      - mct-api-media:/home/api/media
+      - mct-api-static:/home/api/static
+      - mct-api-db:/home/api/db
+    env_file:
+      - ./.env.example
+    environment:
+      - MCT_VERSION=v2.18.1
+    # ports:
+    #   - "${MCTRAINER_PORT:-8001}:8000"
+    command: /home/scripts/run.sh
+    depends_on:
+      - medcattrainer-bg-process
+      - medcattrainer_solr
+      - medcattrainer_nginx
+    restart: unless-stopped
+  
+  medcattrainer-bg-process:
+    image: cogstacksystems/medcat-trainer:v2.18.1
+    networks:
+      - bioext_network 
+    volumes:
+      - ./medcattrainer/configs:/home/configs
+      - mct-api-media:/home/api/media
+      - mct-api-static:/home/api/static
+      - mct-api-db:/home/api/db
+    env_file:
+      - ./.env.example
+    command: /home/scripts/run-bg-process.sh
+    restart: unless-stopped
+  
+  medcattrainer_nginx:
+    container_name: bioextmedcattrainer_nginx
+    image: nginx
+    networks:
+      - bioext_network 
+    volumes:
+      - mct-api-media:/home/api/media
+      - mct-api-static:/home/api/static
+      - ./medcattrainer/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./medcattrainer/nginx/sites-enabled/:/etc/nginx/sites-enabled
+    env_file:
+      - ./.env.example
+    ports:
+      - "${MCTRAINER_PORT:-8001}:8000"
+    restart: unless-stopped
+
+  medcattrainer_solr: 
+    container_name: bioextmedcattrainer_solr
+    image: solr:8
+    networks:
+      - bioext_network 
+    restart: unless-stopped
+    env_file:
+      - ./.env.example
+    expose:
+      - "8983"
+    # ports:
+    #   - "${CONCEPT_SEARCH_SERVICE_PORT:-8983}:8983"
+    volumes:
+      - mct-solr-data:/var/solr
+    command:
+      - -cloud  # solr cloud launches
 
   minio:
     image: minio/minio:${MINIO_VERSION}
@@ -201,6 +271,10 @@ volumes:
   doccano_data:
   kibana_data:
   elasticsearch_data:
+  mct-api-media:
+  mct-api-static:
+  mct-api-db:
+  mct-solr-data:
 
 networks:
   bioext_network:

@@ -8,6 +8,7 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 - `/deployment` deploying MLOps environment in production
 - `/deployment_local` deploying MLOps and ElasticSearch in local dev environment
 - `/src` bioext package that is imported into projects, containing utils for interacting with environment
+- `/tutorials` quick walkthroughs with examples of the functionality of the bioext package utils
 - `/projects` individual projects that contain labelling/model development scripts, not part of bioext package
 
 ```
@@ -24,6 +25,10 @@ Biomarker and deep phenotype extraction platform, as an extension to CogStack, o
 |----__init__.py
 |----doccano_utils.py
 |----elastic_utils.py
+|
+|tutorials/
+|--medcattrainer
+|----medcattrainer_api_tutorial.py
 |
 |projects/
 |--test_ml_runs/
