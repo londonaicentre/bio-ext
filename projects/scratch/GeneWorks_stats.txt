@@ -34,3 +34,21 @@ MLPA SUBTELOMERE TEST - 360
         NOT document_Content : ("QF-PCR") NOT document_Content : ("ANEUPLOIDY")
 
 document_Name.keyword: Biochem is on the protein level
+
+
+"query": {
+"bool": {
+"must": [
+{
+        "query_string": {
+        "query": "document_Name : \"DNA\" AND (document_Content : \"Reason for referral\" or document_Content : \"uReason\" or document_Content : \"referralu\" or document_Content : \"uuReason\")",
+        "analyze_wildcard": true,
+        "time_zone": "Europe/London"
+        }
+}
+],
+"filter": [],
+"should": [],
+"must_not": []
+}
+},
