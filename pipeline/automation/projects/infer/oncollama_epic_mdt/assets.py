@@ -8,11 +8,8 @@ from dagster import (
 from slack_sdk import WebClient
 
 
-from projects.bioext_replication.assets import (
-    elasticsearch_replication_asset,
-    epic_daily_partitions,
-)
-from projects.common.utils import (
+from projects.common.config import epic_daily_partitions
+from projects.ingest.utils import (
     create_index_if_not_exists,
     elasticsearch_scroll_generator,
     get_count_of_documents,
@@ -27,12 +24,12 @@ OUTPUT_INDEX = f"oncollama_epic_{MODEL_VERSION}"
 
 @asset(
     automation_condition=dg.AutomationCondition.eager(),
-    deps=[elasticsearch_replication_asset],
+    deps=["epic_oncology_mdt"],
     partitions_def=epic_daily_partitions,
-    required_resource_keys={"dest_es", "slack"},
-    code_version="1.0.0",  # This is equivalent to the oncollama version
+    required_resource_keys={"bioext_elastic", "slack"},
+    group_name="infer",
 )
-def oncollama_epic_asset(context: AssetExecutionContext):
+def oncollama_epic_mdt(context: AssetExecutionContext):
     """Asset for OncoLlama output."""
     context.log.info("Starting OncoLLAMA Epic asset execution.")
 
@@ -51,7 +48,7 @@ def oncollama_epic_asset(context: AssetExecutionContext):
     )
 
     # Get Elasticsearch client from resources
-    dest_es = context.resources.dest_es
+    dest_es = context.resources.bioext_elastic
     # Query to fetch data for this time partition with explicit source selection
     query = {
         "_source": [

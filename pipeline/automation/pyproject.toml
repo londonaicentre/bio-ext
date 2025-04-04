@@ -3,7 +3,7 @@ name = "automation"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11.2"
+requires-python = "~=3.12"
 dependencies = [
     "dagster>=1.8.13",
     "dagster-postgres>=0.24.13",
@@ -12,14 +12,11 @@ dependencies = [
     "elasticsearch>=8.17.2",
     "requests>=2.32.3",
     "dagster-slack>=0.26.6",
+    "vllm>=0.8.2",
 ]
 
 [dependency-groups]
-dev = [
-    "mock>=5.2.0",
- "pytest>=8.3.5",
- "ruff>=0.11.2",
-]
+dev = ["mock>=5.2.0", "pytest>=8.3.5", "ruff>=0.11.2"]
 
 [tool.dagster]
 module_name = "projects.definitions"

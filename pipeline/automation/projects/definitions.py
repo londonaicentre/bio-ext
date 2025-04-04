@@ -1,17 +1,16 @@
 from dagster import Definitions
 
-from .bioext_replication.assets import (
-    elasticsearch_replication_asset,
-    materialisation_schedule,
-)
-from .bioext_replication.checks import assert_equal_number_documents
-from .bioext_replication.resources import elasticsearch_resources
+import projects.ingest.epic_oncology_letters
+import projects.ingest.epic_oncology_mdt
+import projects.infer.oncollama_epic_letters
+import projects.infer.oncollama_epic_mdt
 
-from .oncollama_epic.assets import oncollama_epic_asset
+from projects.common.resources import global_resouces
 
-defs = Definitions(
-    assets=[elasticsearch_replication_asset, oncollama_epic_asset],
-    resources=elasticsearch_resources,
-    schedules=[materialisation_schedule],
-    asset_checks=[assert_equal_number_documents],
+defs = Definitions.merge(
+    projects.ingest.epic_oncology_letters.defs,
+    projects.ingest.epic_oncology_mdt.defs,
+    projects.infer.oncollama_epic_letters.defs,
+    projects.infer.oncollama_epic_mdt.defs,
+    Definitions(resources=global_resouces),
 )

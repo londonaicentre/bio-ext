@@ -1,31 +1,26 @@
 from datetime import datetime, timedelta
 
 import dagster as dg
-from dagster import (
-    AssetExecutionContext,
-    DailyPartitionsDefinition,
-    asset,
-)
+
 from dagster_slack import slack_on_failure
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
-from ..common.utils import elasticsearch_scroll_generator
-from .config import EPIC_START_DATE, ElasticsearchReplicationConfig
-
-epic_daily_partitions = DailyPartitionsDefinition(
-    start_date=EPIC_START_DATE,
-)
+from projects.ingest.utils import elasticsearch_scroll_generator
+from projects.common.config import epic_daily_partitions
+from ...common.config import ElasticsearchReplicationConfig
 
 
-@asset(
+@dg.asset(
     partitions_def=epic_daily_partitions,
     description="Replicates data from source Elasticsearch index to BioExt Elastic replica",
-    required_resource_keys={"source_es", "dest_es", "slack"},
+    required_resource_keys={"cogstack_elastic", "bioext_elastic", "slack"},
     backfill_policy=dg.BackfillPolicy.multi_run(),
+    compute_kind="elasticsearch",
+    group_name="ingest",
 )
-def elasticsearch_replication_asset(
-    context: AssetExecutionContext, config: ElasticsearchReplicationConfig
+def epic_oncology_mdt(
+    context: dg.AssetExecutionContext, config: ElasticsearchReplicationConfig
 ):
     partition_date_str = context.partition_key
 
@@ -40,8 +35,8 @@ def elasticsearch_replication_asset(
     )
 
     # Get Elasticsearch clients from resources
-    source_es: Elasticsearch = context.resources.source_es
-    dest_es: Elasticsearch = context.resources.dest_es
+    source_es: Elasticsearch = context.resources.cogstack_elastic
+    dest_es: Elasticsearch = context.resources.bioext_elastic
 
     # Query to fetch data for this time partition with explicit source selection
     query = {
@@ -81,12 +76,15 @@ def elasticsearch_replication_asset(
                     },
                 ],
                 "filter": [
-                    {"match_phrase": {"activity_Type": "Clinic/Practice Visit"}}
+                    {
+                        "match_phrase": {"activity_Type": "MDT Meeting"},
+                    }
                 ],
                 "should": [],
                 "must_not": [
-                    {"match_phrase": {"document_Name.keyword": "Appointment Note"}},
-                    {"match_phrase": {"document_Name.keyword": "Nursing Note"}},
+                    {
+                        "match_phrase": {"document_Name.keyword": "Appointment Note"},
+                    }
                 ],
             }
         },
@@ -139,12 +137,10 @@ def elasticsearch_replication_asset(
     )
 
 
-from ..oncollama_epic.assets import oncollama_epic_asset  # noqa: E402
-
 # Schedule the asset materialisation job
 materialisation_job = dg.define_asset_job(
     name="update_job",
-    selection=[elasticsearch_replication_asset, oncollama_epic_asset],
+    selection=[epic_oncology_mdt],
     description="Job to run update of indexes for BioExt and oncollama",
     hooks={slack_on_failure("#pipelines", "‼️ @channel BioExt update job failed!")},
 )
