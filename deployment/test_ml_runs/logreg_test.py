@@ -46,7 +46,7 @@ def create_dummy_data(n_samples=10000):
 def mlflow_logistic_regression():
     warnings.filterwarnings("ignore")
 
-    mlflow.set_tracking_uri("http://bioextmlflow:5001")
+    mlflow.set_tracking_uri("http://localhost:5001")
     # mlflow.set_experiment("test_logreg_w_h_g")
 
     df = create_dummy_data()
