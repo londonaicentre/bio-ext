@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Callable, Iterable, Literal, Optional
+from typing import Any, Callable, Dict, Iterable, Literal, Optional, Union
 
 import requests
 from elastic_transport import RequestsHttpNode
@@ -31,17 +31,20 @@ class BaseElasticsearchSession:
 
     def __init__(
         self,
-        elasticsearch_server: str = os.getenv(
-            "ELASTICSEARCH_SERVER", "https://sv-pr-elastic01.gstt.local:9200"
-        ),
+        elasticsearch_server: str = None,
         proxy_node: Optional[RequestsHttpNode] = None,
         elasticsearch_client: Optional[Elasticsearch] = None,
     ) -> None:
-        self.es_server = elasticsearch_server
+        self.es_server = elasticsearch_server or os.getenv(
+            "ELASTICSEARCH_SERVER", "https://sv-pr-elastic01.gstt.local:9200"
+        )
         self.proxy_node = proxy_node
+
+        # Disable SSL warnings
         requests.packages.urllib3.disable_warnings(
             requests.packages.urllib3.exceptions.InsecureRequestWarning
         )
+
         if elasticsearch_client:
             self.es = elasticsearch_client
         else:
@@ -54,19 +57,18 @@ class BaseElasticsearchSession:
     def create_index(
         self,
         index_name: str,
-        mappings: dict[Any],
-        settings: dict[Any] = None,
+        mappings: Dict[str, Any],
+        settings: Optional[Dict[str, Any]] = None,
         overwrite: bool = False,
     ):
         """
         Creates an index in Elasticsearch with option to overwrite existing one.
-        Requires a config input (mappings) that describes fields, e.g.:
-            "mappings": {
-                "properties": {
-                    "seed": {"type": "integer"},
-                    "text": {"type": "text"}
-                }
-            }
+
+        Args:
+            index_name: Name of the index to create
+            mappings: Field mappings configuration
+            settings: Index settings (defaults to single shard)
+            overwrite: Whether to overwrite existing index
         """
         if settings is None:
             settings = {"number_of_shards": 1}
@@ -85,27 +87,26 @@ class BaseElasticsearchSession:
         )
 
     def list_indices(self):
+        """List all indices in the Elasticsearch cluster"""
         return self.es.indices.get_alias(index="*")
 
     def bulk_load_documents(
         self,
         index_name: str,
-        documents: Iterable,
-        progress_callback: None | Callable = None,
+        documents: Iterable[Dict[str, Any]],
+        progress_callback: Optional[Callable[[int], None]] = None,
     ) -> int:
         """
         Bulk load documents into Elasticsearch index using streaming_bulk.
-        This function returns the number of successful document loads, whilst providing a
-        callback to track progress.
 
         Args:
-            index_name (str): The name of the Elasticsearch index.
-            documents (Iterable): An iterable of documents to be indexed. (e.g. list of dicts)
-            progress_callback (callable, optional): A callback function to track progress.
-                It should accept a single argument indicating the number of documents processed.
-                Can be useful for displaying progress in a GUI or logging. (e.g. tqdm)
+            index_name: The name of the Elasticsearch index
+            documents: An iterable of documents to be indexed
+            progress_callback: A callback function to track progress
+
         Returns:
-            int: The number of successfully indexed documents.
+            Number of successfully indexed documents
+
         Example:
             >>> es.bulk_load_documents(
                     index_name="my_index",
@@ -133,30 +134,21 @@ class BaseElasticsearchSession:
     def bulk_retrieve_documents(
         self,
         index_name: str,
-        query: dict,
+        query: Dict[str, Any],
         scroll: str = "2m",
-        save_to_file: None | str | Path = None,
-    ) -> Iterable[dict[str, Any]]:
+        save_to_file: Optional[Union[str, Path]] = None,
+    ) -> Iterable[Dict[str, Any]]:
         """
         Retrieve documents from Elasticsearch using scroll API, and optionally save them to files.
 
         Args:
-            index_name (str): The name of the Elasticsearch index.
-            query (dict): The query to filter the documents.
-            scroll (str): The scroll time for the search context. Default is "2m".
-            save_to_file (str or Path, optional): Directory to save the retrieved documents.
-                If None, documents are not saved to files.
+            index_name: The name of the Elasticsearch index
+            query: The query to filter the documents
+            scroll: The scroll time for the search context. Default is "2m"
+            save_to_file: Directory to save the retrieved documents
 
         Returns:
-            Iterable[dict]: An iterable of documents retrieved from Elasticsearch.
-
-        Example:
-            >>> es.bulk_retrieve_documents(
-                    index_name="my_index",
-                    query={"match_all": {}},
-                    scroll="2m",
-                    save_to_file="/path/to/save"
-                )
+            An iterable of documents retrieved from Elasticsearch
         """
         docs = helpers.scan(
             client=self.es,
@@ -165,70 +157,69 @@ class BaseElasticsearchSession:
             index=index_name,
         )
 
-        # save queried documents to file
-        if save_to_file is not None:
-            os.makedirs(save_to_file, exist_ok=True)
-            processed_count = 0
-            for hit in docs:
-                doc_id = hit["_id"]
-                file_path = os.path.join(save_to_file, f"{doc_id}.json")
-                with open(file_path, "w") as f:
-                    json.dump(hit, f, indent=2)
-                processed_count += 1
-                if processed_count % 1000 == 0:
-                    logger.debug(f"Up to {processed_count} docs...")
-            logger.info(f"{processed_count} docs were downloaded")
+        # Return immediately if not saving to file
+        if save_to_file is None:
+            return docs
 
-        return docs
+        # If saving to file, we need to process and return a new generator
+        return self._save_documents_to_file(docs, save_to_file)
+
+    def _save_documents_to_file(self, docs, save_path):
+        """Helper method to save documents to files and yield them"""
+        os.makedirs(save_path, exist_ok=True)
+        processed_count = 0
+
+        for hit in docs:
+            doc_id = hit["_id"]
+            file_path = os.path.join(save_path, f"{doc_id}.json")
+
+            with open(file_path, "w") as f:
+                json.dump(hit, f, indent=2)
+
+            processed_count += 1
+            if processed_count % 1000 == 0:
+                logger.debug(f"Processed {processed_count} docs...")
+
+            yield hit
+
+        logger.info(f"{processed_count} docs were downloaded")
 
     def get_random_doc_ids(
-        self, index_name: str, size: int, query: None | dict[Any]
+        self, index_name: str, size: int = 100, query: Optional[Dict[str, Any]] = None
     ) -> list[str]:
         """
         Retrieve random document IDs from the specified index.
 
         Args:
-            index_name (str): The name of the Elasticsearch index.
-            size (int): The number of random document IDs to retrieve.
-            query (dict[Any], optional): An optional query to filter the documents.
-                Note: The query should be a valid Elasticsearch query context/predicate only - not a complete query.
-                See here for more: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-filter-context.html
-        Returns:
-            list[str]: A list of random document IDs.
+            index_name: The name of the Elasticsearch index
+            size: The number of random document IDs to retrieve (max 10,000)
+            query: An optional query to filter the documents
 
-        Example:
-            >>> es.get_random_doc_ids("my_index", size=10, query={"match": {"document_Content": "BRCA"}})
+        Returns:
+            A list of random document IDs
         """
-        # Query to retrieve random documents using random_score
-        query = {
+        if size > 10_000:
+            raise ValueError(
+                "This method is not designed to get large numbers of random values. Reduce size <= 10,000"
+            )
+
+        search_query = {
             "_source": False,
             "size": size,
             "query": {
                 "function_score": {
-                    "functions": {"random_score": {}},
-                },
-                "query": query if query else {},
+                    "query": query if query else {"match_all": {}},
+                    "functions": [{"random_score": {}}],
+                }
             },
         }
 
-        # Use the bulk_retrieve_documents method to get the documents
-        res = self.bulk_retrieve_documents(
-            index_name=index_name,
-            query=query,
-            scroll="2m",
+        res = self.es.search(
+            index=index_name,
+            body=search_query,
         )
 
-        random_ids = [doc["_id"] for doc in res]
-
-        return random_ids
-
-
-# == Override classes for different authentication methods ==
-class ElasticsearchManualAuthSession(BaseElasticsearchSession):
-    """Elasticsearch session with manually configured authentication"""
-
-    def __init__(self, elasticsearch_client: Elasticsearch) -> None:
-        self.es = elasticsearch_client
+        return [doc["_id"] for doc in res["hits"]["hits"]]
 
 
 class ElasticsearchApiAuthSession(BaseElasticsearchSession):
@@ -238,10 +229,10 @@ class ElasticsearchApiAuthSession(BaseElasticsearchSession):
         api_id = os.getenv("ELASTIC_API_ID")
         api_key = os.getenv("ELASTIC_API_KEY")
 
-        if not all([api_id, api_key]):
-            raise ValueError(
-                "Check ELASTIC_API_ID and ELASTIC_API_KEY are in env variables"
-            )
+        if not api_id:
+            raise ValueError("Environment variable ELASTIC_API_ID is not set")
+        if not api_key:
+            raise ValueError("Environment variable ELASTIC_API_KEY is not set")
 
         self.es = Elasticsearch(
             hosts=self.es_server,
@@ -259,8 +250,10 @@ class ElasticsearchUserAuthSession(BaseElasticsearchSession):
         es_user = os.getenv("ELASTIC_USER")
         es_pwd = os.getenv("ELASTIC_PWD")
 
-        if not all([es_user, es_pwd]):
-            raise ValueError("Check ELASTIC_USER and ELASTIC_PWD are in env variables")
+        if not es_user:
+            raise ValueError("Environment variable ELASTIC_USER is not set")
+        if not es_pwd:
+            raise ValueError("Environment variable ELASTIC_PWD is not set")
 
         self.es = Elasticsearch(
             hosts=self.es_server,
@@ -270,66 +263,124 @@ class ElasticsearchUserAuthSession(BaseElasticsearchSession):
         )
 
 
+class ElasticsearchManualAuthSession(BaseElasticsearchSession):
+    """Elasticsearch session with manually configured authentication"""
+
+    def __init__(self, elasticsearch_client: Elasticsearch) -> None:
+        super().__init__(elasticsearch_client=elasticsearch_client)
+
+    def _configure_client(self):
+        # Client is already configured in __init__
+        pass
+
+
+def create_elasticsearch_session(
+    auth_type: Literal["api", "user", "manual"] = "api",
+    elasticsearch_server: Optional[str] = None,
+    elasticsearch_client: Optional[Elasticsearch] = None,
+    use_proxy: bool = False,
+) -> BaseElasticsearchSession:
+    """
+    Factory function to create an appropriate Elasticsearch session based on authentication type.
+
+    Args:
+        auth_type: Type of authentication to use ('api', 'user', or 'manual')
+            'api' - API key authentication: relevant environment variables are ELASTIC_API_ID and ELASTIC_API_KEY
+            'user' - Username/password authentication: relevant environment variables are ELASTIC_USER and ELASTIC_PWD
+            'manual' - Manually configured Elasticsearch client
+        elasticsearch_server: Elasticsearch server URL
+        elasticsearch_client: Pre-configured Elasticsearch client (for 'manual' auth only)
+        use_proxy: Whether to use the GSTT proxy
+
+    Returns:
+        Configured Elasticsearch session object
+
+    Raises:
+        ValueError: If auth_type is not one of 'api', 'user', or 'manual'
+        ValueError: If auth_type is 'manual' and elasticsearch_client is not provided
+
+    Example:
+        >>> es_session = create_elasticsearch_session(
+                auth_type="api", use_proxy=True
+            )
+    """
+    proxy_node = GsttProxyNode if use_proxy else None
+
+    if auth_type == "manual":
+        if not elasticsearch_client:
+            raise ValueError(
+                "elasticsearch_client must be provided for manual client configuration"
+            )
+        return ElasticsearchManualAuthSession(elasticsearch_client)
+
+    if auth_type == "api":
+        return ElasticsearchApiAuthSession(
+            elasticsearch_server=elasticsearch_server, proxy_node=proxy_node
+        )
+
+    if auth_type == "user":
+        return ElasticsearchUserAuthSession(
+            elasticsearch_server=elasticsearch_server, proxy_node=proxy_node
+        )
+
+    raise ValueError("auth_type must be one of: 'api', 'user', 'manual'")
+
+
+# For backward compatibility
 class ElasticsearchSession(BaseElasticsearchSession):
-    """Deprecated: Use ElasticsearchApiAuthSession or ElasticsearchUserAuthSession instead"""
+    """Deprecated: Use create_elasticsearch_session() factory function instead"""
 
     def __init__(
         self,
-        proxy_node: RequestsHttpNode | None = None,
-        conn_mode: Literal["HTTP"] | Literal["API"] = "HTTP",
+        proxy_node: Optional[RequestsHttpNode] = None,
+        conn_mode: Literal["HTTP", "API"] = "HTTP",
     ) -> None:
-        import warnings
+        logger.warning(
+            "ElasticsearchSession is deprecated. Use create_elasticsearch_session() instead."
+        )
 
         self.proxy_node = proxy_node
-
-        warnings.warn(
-            "ElasticsearchSession is deprecated. Use ElasticsearchApiAuthSession or ElasticsearchUserAuthSession instead",
-            DeprecationWarning,
-        )
-
-        requests.packages.urllib3.disable_warnings(
-            requests.packages.urllib3.exceptions.InsecureRequestWarning
-        )
-
-        # set to GSTT server by default
         self.es_server = os.getenv(
             "ELASTIC_SERVER", "https://sv-pr-elastic01.gstt.local:9200"
         )
 
-        # Use optional proxy node (useful if running in Proxied Environment)
-        if conn_mode == "API":
-            self.api_id = os.getenv("ELASTIC_API_ID")
-            self.api_key = os.getenv("ELASTIC_API_KEY")
+        # Disable SSL warnings
+        requests.packages.urllib3.disable_warnings(
+            requests.packages.urllib3.exceptions.InsecureRequestWarning
+        )
 
-            if not all([self.api_id, self.api_key]):
-                raise ValueError(
-                    "Check that ELASTIC_API_ID and ELASTIC_API_KEY are in env variables"
-                )
+        self._configure_client(conn_mode)
+
+    def _configure_client(self, conn_mode):
+        if conn_mode == "API":
+            api_id = os.getenv("ELASTIC_API_ID")
+            api_key = os.getenv("ELASTIC_API_KEY")
+
+            if not api_id:
+                raise ValueError("Environment variable ELASTIC_API_ID is not set")
+            if not api_key:
+                raise ValueError("Environment variable ELASTIC_API_KEY is not set")
 
             self.es = Elasticsearch(
                 hosts=self.es_server,
-                api_key=(self.api_id, self.api_key),
+                api_key=(api_id, api_key),
                 node_class=self.proxy_node,
                 verify_certs=False,
                 ssl_show_warn=False,
             )
 
         elif conn_mode == "HTTP":
-            self.es_user = os.getenv("ELASTIC_USER")
-            self.es_pwd = os.getenv("ELASTIC_PWD")
+            es_user = os.getenv("ELASTIC_USER")
+            es_pwd = os.getenv("ELASTIC_PWD")
 
-            if not all([self.es_user, self.es_pwd]):
-                raise ValueError(
-                    "Check ELASTIC_USER and ELASTIC_PWD are in env variables"
-                )
+            if not es_user:
+                raise ValueError("Environment variable ELASTIC_USER is not set")
+            if not es_pwd:
+                raise ValueError("Environment variable ELASTIC_PWD is not set")
 
             self.es = Elasticsearch(
                 hosts=self.es_server,
-                # http_auth has been deprecated
-                basic_auth=(
-                    self.es_user,
-                    self.es_pwd,
-                ),
+                basic_auth=(es_user, es_pwd),
                 verify_certs=False,
                 ssl_show_warn=False,
             )
